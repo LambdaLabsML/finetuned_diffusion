@@ -2,7 +2,7 @@ from diffusers import StableDiffusionPipeline
 import gradio as gr
 import torch
 
-device = "cuda:0" if torch.cuda.is_available() else "cpu"
+device = "GPU 🔥" if torch.cuda.is_available() else "CPU 🥶"
 
 pipe = StableDiffusionPipeline.from_pretrained("nitrosocke/Arcane-Diffusion", torch_dtype=torch.float16)
 if torch.cuda.is_available():
@@ -45,7 +45,7 @@ with gr.Blocks() as demo:
             run = gr.Button(value="Run")
             gr.Markdown(f"Running on: {device}")
         with gr.Column():
-            gallery = gr.Gallery()
+            gallery = gr.Gallery(height=512)
 
     run.click(inference, inputs=[prompt, guidance, steps], outputs=gallery)
     gr.Examples([
