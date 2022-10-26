@@ -9,7 +9,7 @@ if torch.cuda.is_available():
   pipe = pipe.to("cuda")
 
 def inference(prompt, guidance, steps):
-    prompt = prompt + " , arcane style"
+    prompt = prompt + ", arcane style"
     image = pipe(prompt, num_inference_steps=int(steps), guidance_scale=guidance, width=512, height=512).images[0]
     return image
 
@@ -48,11 +48,11 @@ with gr.Blocks() as demo:
 
     run.click(inference, inputs=[prompt, guidance, steps], outputs=image_out)
     gr.Examples([
-        ["jason bateman disassembling the demon core, arcane style", 7.5, 50],
-        ["portrait of dwayne johnson, arcane style", 7.0, 75],
-        ["portrait of a beautiful alyx vance half life, volume lighting, concept art, by greg rutkowski!!, colorful, xray melting colors!!, arcane style", 7, 50],
-        ["Aloy from Horizon: Zero Dawn, half body portrait, videogame cover art, highly detailed, digital painting, artstation, concept art, smooth, detailed armor, sharp focus, beautiful face, illustration, art by Artgerm and greg rutkowski and alphonse mucha, arcane style", 7, 50],
-        ["fantasy portrait painting, digital art, arcane style", 4, 30],
+        ["jason bateman disassembling the demon core", 7.5, 50],
+        ["portrait of dwayne johnson", 7.0, 75],
+        ["portrait of a beautiful alyx vance half life, volume lighting, concept art, by greg rutkowski!!, colorful, xray melting colors!!", 7, 50],
+        ["Aloy from Horizon: Zero Dawn, half body portrait, videogame cover art, highly detailed, digital painting, artstation, concept art, smooth, detailed armor, sharp focus, beautiful face, illustration, art by Artgerm and greg rutkowski and alphonse mucha", 7, 50],
+        ["fantasy portrait painting, digital art", 4, 30],
     ], [prompt, guidance, steps], image_out, inference, cache_examples=torch.cuda.is_available())
     gr.HTML('''
         <div>
