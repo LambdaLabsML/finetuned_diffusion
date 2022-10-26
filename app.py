@@ -39,7 +39,7 @@ with gr.Blocks() as demo:
     with gr.Row():
         
         with gr.Column():
-            prompt = gr.Textbox(label="prompt")
+            prompt = gr.Textbox(label="prompt (append ' , arcane style' as shown in examples)")
             guidance = gr.Slider(label="guidance scale", value=7.5, maximum=15)
             steps = gr.Slider(label="steps", value=50, maximum=100, minimum=2)
             run = gr.Button(value="Run")
