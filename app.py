@@ -16,12 +16,13 @@ def inference(prompt, guidance, steps):
 
 with gr.Blocks() as demo:
     with gr.Row():
-        gr.Markdown(f"Running on: {device}")
+        
         with gr.Column():
             prompt = gr.Textbox(label="prompt")
             guidance = gr.Slider(label="guidance scale", value=7.5, maximum=15)
             steps = gr.Slider(label="steps", value=50, maximum=100, minimum=2)
             run = gr.Button(value="Run")
+            gr.Markdown(f"Running on: {device}")
         with gr.Column():
             gallery = gr.Gallery()
 
