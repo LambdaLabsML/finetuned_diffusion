@@ -39,7 +39,7 @@ with gr.Blocks() as demo:
     with gr.Row():
         
         with gr.Column():
-            prompt = gr.Textbox(label="prompt (append ' , arcane style' as shown in examples)")
+            prompt = gr.Textbox(label="prompt", placeholder="(append ' , arcane style' as shown in the examples)")
             guidance = gr.Slider(label="guidance scale", value=7.5, maximum=15)
             steps = gr.Slider(label="steps", value=50, maximum=100, minimum=2)
             run = gr.Button(value="Run")
@@ -55,6 +55,16 @@ with gr.Blocks() as demo:
         ["Aloy from Horizon: Zero Dawn, half body portrait, videogame cover art, highly detailed, digital painting, artstation, concept art, smooth, detailed armor, sharp focus, beautiful face, illustration, art by Artgerm and greg rutkowski and alphonse mucha, arcane style", 7, 50],
         ["fantasy portrait painting, digital art, arcane style", 4, 30],
     ], [prompt, guidance, steps], gallery, inference, cache_examples=torch.cuda.is_available())
+    gr.HTML('''
+        <div>
+            <p>Model by <a href="https://huggingface.co/nitrosocke" style="text-decoration: underline;" target="_blank">@nitrosocke</a> ❤️</p>
+        </div>
+        <div>Space by 
+            <a href="https://twitter.com/hahahahohohe">
+              <img alt="Twitter Follow" src="https://img.shields.io/twitter/follow/hahahahohohe?label=%40anzorq&style=social">
+            </a>
+        </div>
+        ''')
 
 demo.queue()
 demo.launch()
