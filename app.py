@@ -2,6 +2,7 @@ from diffusers import StableDiffusionPipeline
 import gradio as gr
 
 pipe = StableDiffusionPipeline.from_pretrained("nitrosocke/Arcane-Diffusion")
+pipe = pipe.to("cuda")
 
 def inference(prompt, guidance, steps):
     all_images = [] 
