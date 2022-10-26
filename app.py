@@ -2,6 +2,8 @@ from diffusers import StableDiffusionPipeline
 import gradio as gr
 import torch
 
+device = "cuda:0" if torch.cuda.is_available() else "cpu"
+
 pipe = StableDiffusionPipeline.from_pretrained("nitrosocke/Arcane-Diffusion", torch_dtype=torch.float16)
 if torch.cuda.is_available():
   pipe = pipe.to("cuda")
@@ -14,7 +16,7 @@ def inference(prompt, guidance, steps):
 
 with gr.Blocks() as demo:
     with gr.Row():
-        #gr.Markdown(f"Running on: {device}")      
+        gr.Markdown(f"Running on: {device}")
         with gr.Column():
             prompt = gr.Textbox(label="prompt")
             guidance = gr.Slider(label="guidance scale", value=7.5, maximum=15)
