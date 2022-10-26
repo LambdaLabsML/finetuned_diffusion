@@ -15,6 +15,27 @@ def inference(prompt, guidance, steps):
     return all_images
 
 with gr.Blocks() as demo:
+    gr.HTML(
+        """
+            <div style="text-align: center; max-width: 700px; margin: 0 auto;">
+              <div
+                style="
+                  display: inline-flex;
+                  align-items: center;
+                  gap: 0.8rem;
+                  font-size: 1.75rem;
+                "
+              >
+                <h1 style="font-weight: 900; margin-bottom: 7px;">
+                  Arcane Diffusion
+                </h1>
+              </div>
+              <p style="margin-bottom: 10px; font-size: 94%">
+               Demo for a fine-tuned Stable Diffusion model trained on images from the TV Show Arcane.
+              </p>
+            </div>
+        """
+    )
     with gr.Row():
         
         with gr.Column():
