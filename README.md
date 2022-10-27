@@ -1,8 +1,8 @@
 ---
-title: Arcane Diffusion
-emoji: 🏢
-colorFrom: indigo
-colorTo: indigo
+title: Finetuned Diffusion
+emoji: 🖼️
+colorFrom: red
+colorTo: pink
 sdk: gradio
 sdk_version: 3.6
 app_file: app.py
