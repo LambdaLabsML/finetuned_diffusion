@@ -48,7 +48,7 @@ def inference(model, prompt, img, strength, guidance, steps, seed):
   else:
     return text_inference(model, prompt, guidance, steps, generator)
 
-def text_inference(model, prompt, guidance, steps, generator):
+def text_inference(model, prompt, guidance, steps, generator=None):
 
     global current_model
     global pipe
@@ -162,7 +162,7 @@ with gr.Blocks(css=css) as demo:
         [models[4], "portrait of a beautiful alyx vance half life", 10, 50],
         [models[5], "Aloy from Horizon: Zero Dawn, half body portrait, smooth, detailed armor, beautiful face, illustration", 7, 45],
         [models[4], "fantasy portrait painting, digital art", 4, 30],
-    ], [model, prompt, guidance, steps, None], image_out, text_inference, cache_examples=torch.cuda.is_available())
+    ], [model, prompt, guidance, steps], image_out, text_inference, cache_examples=torch.cuda.is_available())
     gr.HTML('''
         <div>
             <p>Model by <a href="https://huggingface.co/nitrosocke" target="_blank">@nitrosocke</a> ❤️</p>
