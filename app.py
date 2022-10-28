@@ -141,7 +141,7 @@ with gr.Blocks(css=css) as demo:
             model = gr.Dropdown(label="Model", choices=models, value=models[0])
             prompt = gr.Textbox(label="Prompt", placeholder="Style prefix is applied automatically")
             with gr.Accordion("Image to image (optional)", open=False):
-              image = gr.Image(label="Image", height=256, tool="editor")
+              image = gr.Image(label="Image", height=256, tool="editor", type="pil")
               strength = gr.Slider(label="Strength", minimum=0, maximum=1, step=0.01, value=0.75)
             
             with gr.Accordion("Advanced options", open=False):
@@ -162,7 +162,7 @@ with gr.Blocks(css=css) as demo:
         [models[4], "portrait of a beautiful alyx vance half life", 10, 50],
         [models[5], "Aloy from Horizon: Zero Dawn, half body portrait, smooth, detailed armor, beautiful face, illustration", 7, 45],
         [models[4], "fantasy portrait painting, digital art", 4, 30],
-    ], [model, prompt, guidance, steps], image_out, text_inference, cache_examples=torch.cuda.is_available())
+    ], [model, prompt, guidance, steps], image_out, text_inference, cache_examples=False)#torch.cuda.is_available())
     gr.HTML('''
         <div>
             <p>Model by <a href="https://huggingface.co/nitrosocke" target="_blank">@nitrosocke</a> ❤️</p>
