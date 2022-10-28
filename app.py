@@ -6,14 +6,16 @@ models = [
   "nitrosocke/Arcane-Diffusion",
   "nitrosocke/archer-diffusion",
   "nitrosocke/elden-ring-diffusion",
-  "nitrosocke/spider-verse-diffusion"
+  "nitrosocke/spider-verse-diffusion",
+  "nitrosocke/modern-disney-diffusion"
 ]
 
 prompt_prefixes = {
   models[0]: "arcane style ",
   models[1]: "archer style ",
   models[2]: "elden ring style ",
-  models[3]: "spiderverse style "
+  models[3]: "spiderverse style ",
+  models[4]: "modern disney style "
 }
 
 current_model = models[0]
@@ -78,8 +80,8 @@ with gr.Blocks() as demo:
     gr.Examples([
         ["jason bateman disassembling the demon core", 7.5, 50],
         ["portrait of dwayne johnson", 7.0, 75],
-        ["portrait of a beautiful alyx vance half life", 7, 50],
-        ["Aloy from Horizon: Zero Dawn, half body portrait, smooth, detailed armor, beautiful face, illustration", 7, 50],
+        ["portrait of a beautiful alyx vance half life", 10, 50],
+        ["Aloy from Horizon: Zero Dawn, half body portrait, smooth, detailed armor, beautiful face, illustration", 7, 45],
         ["fantasy portrait painting, digital art", 4, 30],
     ], [prompt, guidance, steps], image_out, inference, cache_examples=torch.cuda.is_available())
     gr.HTML('''
