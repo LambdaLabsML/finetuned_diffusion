@@ -165,16 +165,12 @@ with gr.Blocks(css=css) as demo:
         [models[5], "Aloy from Horizon: Zero Dawn, half body portrait, smooth, detailed armor, beautiful face, illustration", 7, 45],
         [models[4], "fantasy portrait painting, digital art", 4, 30],
     ], [model, prompt, guidance, steps], image_out, text_inference, cache_examples=False)#torch.cuda.is_available())
-    gr.HTML('''
-        <div>
-            <p>Model by <a href="https://huggingface.co/nitrosocke" target="_blank">@nitrosocke</a> ❤️</p>
-        </div>
-        <div>Space by 
-            <a href="https://twitter.com/hahahahohohe">
-              <img alt="Twitter Follow" src="https://img.shields.io/twitter/follow/hahahahohohe?label=%40anzorq&style=social">
-            </a>
-        </div>
-        ''')
+    gr.Markdown('''
+      Models by [@nitrosocke](https://huggingface.co/nitrosocke), [@Helixngc7293](https://twitter.com/DGSpitzer) and others. ❤️<br>
+      Space by: [![Twitter Follow](https://img.shields.io/twitter/follow/hahahahohohe?label=%40anzorq&style=social)](https://twitter.com/hahahahohohe)
+  
+      ![visitors](https://visitor-badge.glitch.me/badge?page_id=anzorq.finetuned_diffusion)
+    ''')
 
 demo.queue()
-demo.launch(debug=True)
+demo.launch()
