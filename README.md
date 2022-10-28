@@ -1,6 +1,6 @@
 ---
 title: Finetuned Diffusion
-emoji: 🖼️
+emoji: 🪄🖼️
 colorFrom: red
 colorTo: pink
 sdk: gradio
