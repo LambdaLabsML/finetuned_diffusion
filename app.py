@@ -41,8 +41,10 @@ if torch.cuda.is_available():
 
 device = "GPU 🔥" if torch.cuda.is_available() else "CPU 🥶"
 
-def inference(model, prompt, img, strength, guidance, steps, seed):
+def inference(model, img, strength, prompt, guidance, steps, seed):
+
   generator = torch.manual_seed(seed) if seed != 0 else None
+  
   if img is not None:
     return img_inference(model, prompt, img, strength, guidance, steps, generator)
   else:
