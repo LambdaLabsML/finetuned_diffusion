@@ -43,7 +43,7 @@ device = "GPU 🔥" if torch.cuda.is_available() else "CPU 🥶"
 
 def inference(model, img, strength, prompt, guidance, steps, seed):
 
-  generator = torch.manual_seed(seed) if seed != 0 else None
+  generator = torch.Generator('cuda').manual_seed(seed) if seed != 0 else None
   
   if img is not None:
     return img_inference(model, prompt, img, strength, guidance, steps, generator)
@@ -164,7 +164,7 @@ with gr.Blocks(css=css) as demo:
         [models[4], "portrait of a beautiful alyx vance half life", 10, 50],
         [models[5], "Aloy from Horizon: Zero Dawn, half body portrait, smooth, detailed armor, beautiful face, illustration", 7, 45],
         [models[4], "fantasy portrait painting, digital art", 4, 30],
-    ], [model, prompt, guidance, steps], image_out, text_inference, cache_examples=False)#torch.cuda.is_available())
+    ], [model, prompt, guidance, steps], image_out, text_inference, cache_examples=torch.cuda.is_available())
     gr.Markdown('''
       Models by [@nitrosocke](https://huggingface.co/nitrosocke), [@Helixngc7293](https://twitter.com/DGSpitzer) and others. ❤️<br>
       Space by: [![Twitter Follow](https://img.shields.io/twitter/follow/hahahahohohe?label=%40anzorq&style=social)](https://twitter.com/hahahahohohe)
