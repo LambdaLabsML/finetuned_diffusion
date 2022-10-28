@@ -1,3 +1,4 @@
+from email import generator
 from diffusers import StableDiffusionPipeline
 from diffusers import StableDiffusionImg2ImgPipeline
 import gradio as gr
@@ -14,7 +15,8 @@ models = [
   "yuk/fuyuko-waifu-diffusion",
   "AstraliteHeart/pony-diffusion",
   "IfanSnek/JohnDiffusion",
-  "nousr/robo-diffusion"
+  "nousr/robo-diffusion",
+  "DGSpitzer/Cyberpunk-Anime-Diffusion"
 ]
 
 prompt_prefixes = {
@@ -29,6 +31,7 @@ prompt_prefixes = {
   models[8]: "",
   models[9]: "",
   models[10]: "",
+  models[11]: "dgs illustration style ",
 }
 
 current_model = models[0]
@@ -38,13 +41,14 @@ if torch.cuda.is_available():
 
 device = "GPU 🔥" if torch.cuda.is_available() else "CPU 🥶"
 
-def inference(model, prompt, img, guidance, steps):
+def inference(model, prompt, img, strength, guidance, steps, seed):
+  generator = torch.manual_seed(seed) if seed != 0 else None
   if img is not None:
-    return img_inference(model, prompt, img, guidance, steps)
+    return img_inference(model, prompt, img, strength, guidance, steps, generator)
   else:
-    return text_inference(model, prompt, guidance, steps)
+    return text_inference(model, prompt, guidance, steps, generator)
 
-def text_inference(model, prompt, guidance, steps):
+def text_inference(model, prompt, guidance, steps, generator):
 
     global current_model
     global pipe
@@ -56,10 +60,16 @@ def text_inference(model, prompt, guidance, steps):
             pipe = pipe.to("cuda")
 
     prompt = prompt_prefixes[current_model] + prompt
-    image = pipe(prompt, num_inference_steps=int(steps), guidance_scale=guidance, width=512, height=512).images[0]
+    image = pipe(
+      prompt,
+      num_inference_steps=int(steps),
+      guidance_scale=guidance,
+      width=512,
+      height=512,
+      generator=generator).images[0]
     return image
 
-def img_inference(model, prompt, img, guidance, steps):
+def img_inference(model, prompt, img, strength, guidance, steps, generator):
 
     global current_model
     global pipe
@@ -76,10 +86,11 @@ def img_inference(model, prompt, img, guidance, steps):
         prompt,
         init_image=img,
         num_inference_steps=int(steps),
-        strength=0.75,
+        strength=strength,
         guidance_scale=guidance,
         width=512,
-        height=512).images[0]
+        height=512,
+        generator=generator).images[0]
     return image
 
 
@@ -118,7 +129,7 @@ with gr.Blocks(css=css) as demo:
               </div>
               <p>
                Demo for multiple fine-tuned Stable Diffusion models, trained on different styles: <br>
-               <a href="https://huggingface.co/nitrosocke/Arcane-Diffusion">Arcane</a>, <a href="https://huggingface.co/nitrosocke/archer-diffusion">Archer</a>, <a href="https://huggingface.co/nitrosocke/elden-ring-diffusion">Elden Ring</a>, <a href="https://huggingface.co/nitrosocke/spider-verse-diffusion">Spiderverse</a>, <a href="https://huggingface.co/nitrosocke/modern-disney-diffusion">Modern Disney</a>, <a href="https://huggingface.co/hakurei/waifu-diffusion">Waifu</a>, <a href="https://huggingface.co/lambdalabs/sd-pokemon-diffusers">Pokemon</a>, <a href="https://huggingface.co/yuk/fuyuko-waifu-diffusion">Fuyuko Waifu</a>, <a href="https://huggingface.co/AstraliteHeart/pony-diffusion">Pony</a>, <a href="https://huggingface.co/IfanSnek/JohnDiffusion">John</a>, <a href="https://huggingface.co/nousr/robo-diffusion">Robo</a>.
+               <a href="https://huggingface.co/nitrosocke/Arcane-Diffusion">Arcane</a>, <a href="https://huggingface.co/nitrosocke/archer-diffusion">Archer</a>, <a href="https://huggingface.co/nitrosocke/elden-ring-diffusion">Elden Ring</a>, <a href="https://huggingface.co/nitrosocke/spider-verse-diffusion">Spiderverse</a>, <a href="https://huggingface.co/nitrosocke/modern-disney-diffusion">Modern Disney</a>, <a href="https://huggingface.co/hakurei/waifu-diffusion">Waifu</a>, <a href="https://huggingface.co/lambdalabs/sd-pokemon-diffusers">Pokemon</a>, <a href="https://huggingface.co/yuk/fuyuko-waifu-diffusion">Fuyuko Waifu</a>, <a href="https://huggingface.co/AstraliteHeart/pony-diffusion">Pony</a>, <a href="https://huggingface.co/IfanSnek/JohnDiffusion">John</a>, <a href="https://huggingface.co/nousr/robo-diffusion">Robo</a>, <a href="https://huggingface.co/DGSpitzer/Cyberpunk-Anime-Diffusion">Cyberpunk Anime</a>
               </p>
             </div>
         """
@@ -126,17 +137,25 @@ with gr.Blocks(css=css) as demo:
     with gr.Row():
         
         with gr.Column():
+
             model = gr.Dropdown(label="Model", choices=models, value=models[0])
             prompt = gr.Textbox(label="Prompt", placeholder="Style prefix is applied automatically")
-            img = gr.Image(label="img2img (optional)", type="pil", height=256, tool="editor")
-            guidance = gr.Slider(label="Guidance scale", value=7.5, maximum=15)
-            steps = gr.Slider(label="Steps", value=50, maximum=100, minimum=2)
+            with gr.Accordion("Image to image (optional)", open=False):
+              image = gr.Image(label="Image", height=256, tool="editor")
+              strength = gr.Slider(label="Strength", minimum=0, maximum=1, step=0.01, value=0.75)
+            
+            with gr.Accordion("Advanced options", open=False):
+              guidance = gr.Slider(label="Guidance scale", value=7.5, maximum=15)
+              steps = gr.Slider(label="Steps", value=50, maximum=100, minimum=2)
+              seed = gr.Slider(0, 2147483647, label='Seed (0 = random)', value=0, step=1)
+
             run = gr.Button(value="Run")
             gr.Markdown(f"Running on: {device}")
         with gr.Column():
             image_out = gr.Image(height=512)
 
-    run.click(inference, inputs=[model, prompt, img, guidance, steps], outputs=image_out)
+    prompt.submit(inference, inputs=[model, image, strength, prompt, guidance, steps, seed], outputs=image_out)
+    run.click(inference, inputs=[model, image, strength, prompt, guidance, steps, seed], outputs=image_out)
     gr.Examples([
         [models[0], "jason bateman disassembling the demon core", 7.5, 50],
         [models[3], "portrait of dwayne johnson", 7.0, 75],
