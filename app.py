@@ -7,7 +7,13 @@ models = [
   "nitrosocke/archer-diffusion",
   "nitrosocke/elden-ring-diffusion",
   "nitrosocke/spider-verse-diffusion",
-  "nitrosocke/modern-disney-diffusion"
+  "nitrosocke/modern-disney-diffusion",
+  "hakurei/waifu-diffusion",
+  "lambdalabs/sd-pokemon-diffusers",
+  "yuk/fuyuko-waifu-diffusion",
+  "AstraliteHeart/pony-diffusion",
+  "IfanSnek/JohnDiffusion",
+  "nousr/robo-diffusion"
 ]
 
 prompt_prefixes = {
@@ -15,7 +21,13 @@ prompt_prefixes = {
   models[1]: "archer style ",
   models[2]: "elden ring style ",
   models[3]: "spiderverse style ",
-  models[4]: "modern disney style "
+  models[4]: "modern disney style ",
+  models[5]: "",
+  models[6]: "",
+  models[7]: "",
+  models[8]: "",
+  models[9]: "",
+  models[10]: "",
 }
 
 current_model = models[0]
@@ -58,7 +70,8 @@ with gr.Blocks() as demo:
                 </h1>
               </div>
               <p style="margin-bottom: 10px; font-size: 94%">
-               Demo for multiple fine-tuned Stable Diffusion models, trained on different styles: Arcane, Archer, Elden Ring, Spiderverse.
+               Demo for multiple fine-tuned Stable Diffusion models, trained on different styles:
+               <a href="https://huggingface.co/nitrosocke/Arcane-Diffusion">Arcane</a>, <a href="https://huggingface.co/nitrosocke/archer-diffusion">Archer</a>, <a href="https://huggingface.co/nitrosocke/elden-ring-diffusion">Elden Ring</a>, <a href="https://huggingface.co/nitrosocke/spider-verse-diffusion">Spiderverse</a>, <a href="https://huggingface.co/nitrosocke/modern-disney-diffusion">Modern Disney</a>, <a href="https://huggingface.co/hakurei/waifu-diffusion">Waifu</a>, <a href="https://huggingface.co/lambdalabs/sd-pokemon-diffusers">Pokemon</a>, <a href="https://huggingface.co/yuk/fuyuko-waifu-diffusion">Fuyuko Waifu</a>, <a href="https://huggingface.co/AstraliteHeart/pony-diffusion">Pony</a>, <a href="https://huggingface.co/IfanSnek/JohnDiffusion">John</a>, <a href="https://huggingface.co/nousr/robo-diffusion">Robo</a>.
               </p>
             </div>
         """
@@ -67,7 +80,7 @@ with gr.Blocks() as demo:
         
         with gr.Column():
             model = gr.Dropdown(label="Model", choices=models, value=models[0])
-            prompt = gr.Textbox(label="Prompt", placeholder="{} is added automatically".format(prompt_prefixes[current_model]))
+            prompt = gr.Textbox(label="Prompt", placeholder="Style prefix is applied automatically")
             guidance = gr.Slider(label="Guidance scale", value=7.5, maximum=15)
             steps = gr.Slider(label="Steps", value=50, maximum=100, minimum=2)
             run = gr.Button(value="Run")
