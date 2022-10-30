@@ -1,4 +1,3 @@
-from email import generator
 from diffusers import StableDiffusionPipeline
 from diffusers import StableDiffusionImg2ImgPipeline
 import gradio as gr
@@ -14,9 +13,9 @@ models = [
   "lambdalabs/sd-pokemon-diffusers",
   "yuk/fuyuko-waifu-diffusion",
   "AstraliteHeart/pony-diffusion",
-  "IfanSnek/JohnDiffusion",
   "nousr/robo-diffusion",
-  "DGSpitzer/Cyberpunk-Anime-Diffusion"
+  "DGSpitzer/Cyberpunk-Anime-Diffusion",
+  "sd-dreambooth-library/herge-style"
 ]
 
 prompt_prefixes = {
@@ -30,8 +29,8 @@ prompt_prefixes = {
   models[7]: "",
   models[8]: "",
   models[9]: "",
-  models[10]: "",
-  models[11]: "dgs illustration style ",
+  models[10]: "dgs illustration style ",
+  models[11]: "herge_style ",
 }
 
 current_model = models[0]
@@ -83,7 +82,8 @@ def img_inference(model, prompt, img, strength, guidance, steps, generator):
             pipe = pipe.to("cuda")
 
     prompt = prompt_prefixes[current_model] + prompt
-    img.resize((512, 512))
+    ratio = min(512 / img.height, 512 / img.width)
+    img = img.resize((int(img.width * ratio), int(img.height * ratio)))
     image = pipe(
         prompt,
         init_image=img,
@@ -131,7 +131,7 @@ with gr.Blocks(css=css) as demo:
               </div>
               <p>
                Demo for multiple fine-tuned Stable Diffusion models, trained on different styles: <br>
-               <a href="https://huggingface.co/nitrosocke/Arcane-Diffusion">Arcane</a>, <a href="https://huggingface.co/nitrosocke/archer-diffusion">Archer</a>, <a href="https://huggingface.co/nitrosocke/elden-ring-diffusion">Elden Ring</a>, <a href="https://huggingface.co/nitrosocke/spider-verse-diffusion">Spiderverse</a>, <a href="https://huggingface.co/nitrosocke/modern-disney-diffusion">Modern Disney</a>, <a href="https://huggingface.co/hakurei/waifu-diffusion">Waifu</a>, <a href="https://huggingface.co/lambdalabs/sd-pokemon-diffusers">Pokemon</a>, <a href="https://huggingface.co/yuk/fuyuko-waifu-diffusion">Fuyuko Waifu</a>, <a href="https://huggingface.co/AstraliteHeart/pony-diffusion">Pony</a>, <a href="https://huggingface.co/IfanSnek/JohnDiffusion">John</a>, <a href="https://huggingface.co/nousr/robo-diffusion">Robo</a>, <a href="https://huggingface.co/DGSpitzer/Cyberpunk-Anime-Diffusion">Cyberpunk Anime</a>
+               <a href="https://huggingface.co/nitrosocke/Arcane-Diffusion">Arcane</a>, <a href="https://huggingface.co/nitrosocke/archer-diffusion">Archer</a>, <a href="https://huggingface.co/nitrosocke/elden-ring-diffusion">Elden Ring</a>, <a href="https://huggingface.co/nitrosocke/spider-verse-diffusion">Spiderverse</a>, <a href="https://huggingface.co/nitrosocke/modern-disney-diffusion">Modern Disney</a>, <a href="https://huggingface.co/hakurei/waifu-diffusion">Waifu</a>, <a href="https://huggingface.co/lambdalabs/sd-pokemon-diffusers">Pokemon</a>, <a href="https://huggingface.co/yuk/fuyuko-waifu-diffusion">Fuyuko Waifu</a>, <a href="https://huggingface.co/AstraliteHeart/pony-diffusion">Pony</a>, <a href="https://huggingface.co/sd-dreambooth-library/herge-style">Hergé (Tintin)</a>, <a href="https://huggingface.co/nousr/robo-diffusion">Robo</a>, <a href="https://huggingface.co/DGSpitzer/Cyberpunk-Anime-Diffusion">Cyberpunk Anime</a>
               </p>
             </div>
         """
@@ -144,7 +144,7 @@ with gr.Blocks(css=css) as demo:
             prompt = gr.Textbox(label="Prompt", placeholder="Style prefix is applied automatically")
             with gr.Accordion("Image to image (optional)", open=False):
               image = gr.Image(label="Image", height=256, tool="editor", type="pil")
-              strength = gr.Slider(label="Strength", minimum=0, maximum=1, step=0.01, value=0.75)
+              strength = gr.Slider(label="Transformation strength", minimum=0, maximum=1, step=0.01, value=0.5)
             
             with gr.Accordion("Advanced options", open=False):
               guidance = gr.Slider(label="Guidance scale", value=7.5, maximum=15)
