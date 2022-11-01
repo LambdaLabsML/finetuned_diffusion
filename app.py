@@ -1,5 +1,6 @@
 from diffusers import StableDiffusionPipeline
 from diffusers import StableDiffusionImg2ImgPipeline
+from diffusers import AutoencoderKL, UNet2DConditionModel
 import gradio as gr
 import torch
 
@@ -34,9 +35,14 @@ prompt_prefixes = {
 }
 
 current_model = models[0]
-pipe = StableDiffusionPipeline.from_pretrained(current_model, torch_dtype=torch.float16)
-if torch.cuda.is_available():
-  pipe = pipe.to("cuda")
+pipes = []
+vae = AutoencoderKL.from_pretrained(current_model, subfolder="vae", torch_dtype=torch.float16)
+for model in models:
+  unet = UNet2DConditionModel.from_pretrained(model, subfolder="unet", torch_dtype=torch.float16)
+  pipe = StableDiffusionPipeline.from_pretrained(model, unet=unet, vae=vae, torch_dtype=torch.float16)
+  pipe_i2i = StableDiffusionImg2ImgPipeline.from_pretrained(model, unet=unet, vae=vae, torch_dtype=torch.float16)
+  pipes.append({"name":model, "pipeline":pipe, "pipeline_i2i":pipe_i2i})
+
 
 device = "GPU 🔥" if torch.cuda.is_available() else "CPU 🥶"
 
@@ -54,10 +60,14 @@ def img_to_img(model, prompt, neg_prompt, guidance, steps, width, height, genera
     global current_model
     global pipe
     if model != current_model:
-        current_model = model
-        pipe = StableDiffusionPipeline.from_pretrained(current_model, torch_dtype=torch.float16)
+        current_model = model 
+        pipe = pipe.to("cpu")
         
-        if torch.cuda.is_available():
+    for pipe_dict in pipes:
+          if(pipe_dict["name"] == current_model):
+            pipe = pipe_dict["pipeline"]
+          
+          if torch.cuda.is_available():
             pipe = pipe.to("cuda")
 
     prompt = prompt_prefixes[current_model] + prompt
@@ -69,6 +79,7 @@ def img_to_img(model, prompt, neg_prompt, guidance, steps, width, height, genera
       width=width,
       height=height,
       generator=generator).images[0]
+    
     return image
 
 def txt_to_img(model, prompt, neg_prompt, img, strength, guidance, steps, width, height, generator):
@@ -77,9 +88,13 @@ def txt_to_img(model, prompt, neg_prompt, img, strength, guidance, steps, width,
     global pipe
     if model != current_model:
         current_model = model
-        pipe = StableDiffusionImg2ImgPipeline.from_pretrained(current_model, torch_dtype=torch.float16)
+        pipe = pipe.to("cpu")
         
-        if torch.cuda.is_available():
+    for pipe_dict in pipes:
+          if(pipe_dict["name"] == current_model):
+            pipe = pipe_dict["pipeline_i2i"]
+          
+          if torch.cuda.is_available():
             pipe = pipe.to("cuda")
 
     prompt = prompt_prefixes[current_model] + prompt
@@ -95,6 +110,7 @@ def txt_to_img(model, prompt, neg_prompt, img, strength, guidance, steps, width,
         width=width,
         height=height,
         generator=generator).images[0]
+      
     return image
 
 
