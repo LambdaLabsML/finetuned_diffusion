@@ -40,16 +40,16 @@ if torch.cuda.is_available():
 
 device = "GPU 🔥" if torch.cuda.is_available() else "CPU 🥶"
 
-def inference(model, img, strength, prompt, guidance, steps, seed):
+def inference(model, img, strength, prompt, neg_prompt, guidance, steps, width, height, seed):
 
   generator = torch.Generator('cuda').manual_seed(seed) if seed != 0 else None
   
   if img is not None:
-    return img_inference(model, prompt, img, strength, guidance, steps, generator)
+    return txt_to_img(model, prompt, neg_prompt, img, strength, guidance, steps, width, height, generator)
   else:
-    return text_inference(model, prompt, guidance, steps, generator)
+    return img_to_img(model, prompt, neg_prompt, guidance, steps, width, height, generator)
 
-def text_inference(model, prompt, guidance, steps, generator=None):
+def img_to_img(model, prompt, neg_prompt, guidance, steps, width, height, generator=None):
 
     global current_model
     global pipe
@@ -63,14 +63,15 @@ def text_inference(model, prompt, guidance, steps, generator=None):
     prompt = prompt_prefixes[current_model] + prompt
     image = pipe(
       prompt,
+      negative_prompt=neg_prompt,
       num_inference_steps=int(steps),
       guidance_scale=guidance,
-      width=512,
-      height=512,
+      width=width,
+      height=height,
       generator=generator).images[0]
     return image
 
-def img_inference(model, prompt, img, strength, guidance, steps, generator):
+def txt_to_img(model, prompt, neg_prompt, img, strength, guidance, steps, width, height, generator):
 
     global current_model
     global pipe
@@ -82,16 +83,17 @@ def img_inference(model, prompt, img, strength, guidance, steps, generator):
             pipe = pipe.to("cuda")
 
     prompt = prompt_prefixes[current_model] + prompt
-    ratio = min(512 / img.height, 512 / img.width)
+    ratio = min(height / img.height, width / img.width)
     img = img.resize((int(img.width * ratio), int(img.height * ratio)))
     image = pipe(
         prompt,
+        negative_prompt=neg_prompt,
         init_image=img,
         num_inference_steps=int(steps),
         strength=strength,
         guidance_scale=guidance,
-        width=512,
-        height=512,
+        width=width,
+        height=height,
         generator=generator).images[0]
     return image
 
@@ -139,32 +141,35 @@ with gr.Blocks(css=css) as demo:
     with gr.Row():
         
         with gr.Column():
-
             model = gr.Dropdown(label="Model", choices=models, value=models[0])
             prompt = gr.Textbox(label="Prompt", placeholder="Style prefix is applied automatically")
-            with gr.Accordion("Image to image (optional)", open=False):
-              image = gr.Image(label="Image", height=256, tool="editor", type="pil")
-              strength = gr.Slider(label="Transformation strength", minimum=0, maximum=1, step=0.01, value=0.5)
-            
-            with gr.Accordion("Advanced options", open=False):
-              guidance = gr.Slider(label="Guidance scale", value=7.5, maximum=15)
-              steps = gr.Slider(label="Steps", value=50, maximum=100, minimum=2)
-              seed = gr.Slider(0, 2147483647, label='Seed (0 = random)', value=0, step=1)
+            with gr.Tab("Options"):
 
-            run = gr.Button(value="Run")
-            gr.Markdown(f"Running on: {device}")
+                neg_prompt = gr.Textbox(label="Negative prompt", placeholder="What to exclude from the image")
+                guidance = gr.Slider(label="Guidance scale", value=7.5, maximum=15)
+                steps = gr.Slider(label="Steps", value=50, maximum=100, minimum=2)
+                width = gr.Slider(label="Width", value=512, maximum=1024, minimum=64)
+                height = gr.Slider(label="Height", value=512, maximum=1024, minimum=64)
+                seed = gr.Slider(0, 2147483647, label='Seed (0 = random)', value=0, step=1)
+            with gr.Tab("Image to image"):
+                image = gr.Image(label="Image", height=256, tool="editor", type="pil")
+                strength = gr.Slider(label="Transformation strength", minimum=0, maximum=1, step=0.01, value=0.5)
+
         with gr.Column():
             image_out = gr.Image(height=512)
+            run = gr.Button(value="Run")
+            gr.Markdown(f"Running on: {device}")
 
-    prompt.submit(inference, inputs=[model, image, strength, prompt, guidance, steps, seed], outputs=image_out)
-    run.click(inference, inputs=[model, image, strength, prompt, guidance, steps, seed], outputs=image_out)
+    inputs = [model, image, strength, prompt, neg_prompt, guidance, steps, width, height, seed]
+    prompt.submit(inference, inputs=inputs, outputs=image_out)
+    run.click(inference, inputs=inputs, outputs=image_out)
     gr.Examples([
         [models[0], "jason bateman disassembling the demon core", 7.5, 50],
         [models[3], "portrait of dwayne johnson", 7.0, 75],
         [models[4], "portrait of a beautiful alyx vance half life", 10, 50],
         [models[5], "Aloy from Horizon: Zero Dawn, half body portrait, smooth, detailed armor, beautiful face, illustration", 7, 45],
         [models[4], "fantasy portrait painting, digital art", 4, 30],
-    ], [model, prompt, guidance, steps], image_out, text_inference, cache_examples=torch.cuda.is_available())
+    ], [model, prompt, guidance, steps], image_out, img_to_img, cache_examples=False)
     gr.Markdown('''
       Models by [@nitrosocke](https://huggingface.co/nitrosocke), [@Helixngc7293](https://twitter.com/DGSpitzer) and others. ❤️<br>
       Space by: [![Twitter Follow](https://img.shields.io/twitter/follow/hahahahohohe?label=%40anzorq&style=social)](https://twitter.com/hahahahohohe)
