@@ -51,11 +51,11 @@ def inference(model, img, strength, prompt, neg_prompt, guidance, steps, width, 
   generator = torch.Generator('cuda').manual_seed(seed) if seed != 0 else None
   
   if img is not None:
-    return txt_to_img(model, prompt, neg_prompt, img, strength, guidance, steps, width, height, generator)
+    return img_to_img(model, prompt, neg_prompt, img, strength, guidance, steps, width, height, generator)
   else:
-    return img_to_img(model, prompt, neg_prompt, guidance, steps, width, height, generator)
+    return txt_to_img(model, prompt, neg_prompt, guidance, steps, width, height, generator)
 
-def img_to_img(model, prompt, neg_prompt, guidance, steps, width, height, generator=None):
+def txt_to_img(model, prompt, neg_prompt, guidance, steps, width, height, generator=None):
 
     global current_model
     global pipe
@@ -71,18 +71,19 @@ def img_to_img(model, prompt, neg_prompt, guidance, steps, width, height, genera
             pipe = pipe.to("cuda")
 
     prompt = prompt_prefixes[current_model] + prompt
-    image = pipe(
+    results = pipe(
       prompt,
       negative_prompt=neg_prompt,
       num_inference_steps=int(steps),
       guidance_scale=guidance,
       width=width,
       height=height,
-      generator=generator).images[0]
+      generator=generator)
     
+    image = results.images[0] if not results.nsfw_content_detected[0] else Image.open("nsfw.png")
     return image
 
-def txt_to_img(model, prompt, neg_prompt, img, strength, guidance, steps, width, height, generator):
+def img_to_img(model, prompt, neg_prompt, img, strength, guidance, steps, width, height, generator):
 
     global current_model
     global pipe
@@ -100,7 +101,7 @@ def txt_to_img(model, prompt, neg_prompt, img, strength, guidance, steps, width,
     prompt = prompt_prefixes[current_model] + prompt
     ratio = min(height / img.height, width / img.width)
     img = img.resize((int(img.width * ratio), int(img.height * ratio)))
-    image = pipe(
+    results = pipe(
         prompt,
         negative_prompt=neg_prompt,
         init_image=img,
@@ -109,8 +110,9 @@ def txt_to_img(model, prompt, neg_prompt, img, strength, guidance, steps, width,
         guidance_scale=guidance,
         width=width,
         height=height,
-        generator=generator).images[0]
-      
+        generator=generator)
+        
+    image = results.images[0] if not results.nsfw_content_detected[0] else Image.open("nsfw.png")
     return image
 
 
@@ -159,6 +161,9 @@ with gr.Blocks(css=css) as demo:
         with gr.Column():
             model = gr.Dropdown(label="Model", choices=models, value=models[0])
             prompt = gr.Textbox(label="Prompt", placeholder="Style prefix is applied automatically")
+            run = gr.Button(value="Run")
+            gr.Markdown(f"Running on: {device}")
+            
             with gr.Tab("Options"):
 
                 neg_prompt = gr.Textbox(label="Negative prompt", placeholder="What to exclude from the image")
@@ -173,8 +178,6 @@ with gr.Blocks(css=css) as demo:
 
         with gr.Column():
             image_out = gr.Image(height=512)
-            run = gr.Button(value="Run")
-            gr.Markdown(f"Running on: {device}")
 
     inputs = [model, image, strength, prompt, neg_prompt, guidance, steps, width, height, seed]
     prompt.submit(inference, inputs=inputs, outputs=image_out)
