@@ -149,7 +149,6 @@ with gr.Blocks(css=css) as demo:
             </div>
         """
     )
-    # gr.Markdown(f"Running on: {device}", elem_id="markdown_device")
     with gr.Row():
         
         with gr.Column():
@@ -173,8 +172,8 @@ with gr.Blocks(css=css) as demo:
             image_out = gr.Image(height=512)
 
     inputs = [model_name, prompt, guidance, steps, width, height, seed, image, strength, neg_prompt]
-    prompt.submit(inference, inputs=inputs, outputs=image_out)
-    run.click(inference, inputs=inputs, outputs=image_out)
+    prompt.submit(inference, inputs=inputs, outputs=image_out, scroll_to_output=True)
+    run.click(inference, inputs=inputs, outputs=image_out, scroll_to_output=True)
   
     gr.Examples([
         [models[0].name, "jason bateman disassembling the demon core", 7.5, 50],
