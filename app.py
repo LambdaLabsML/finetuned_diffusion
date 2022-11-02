@@ -17,6 +17,7 @@ class Model:
         self.prefix = prefix
 
 models = [
+     Model("Custom model", "", ""),
      Model("Arcane", "nitrosocke/Arcane-Diffusion", "arcane style "),
      Model("Archer", "nitrosocke/archer-diffusion", "archer style "),
      Model("Elden Ring", "nitrosocke/elden-ring-diffusion", "elden ring style "),
@@ -32,33 +33,42 @@ models = [
      Model("Hergé Style", "sd-dreambooth-library/herge-style", "herge_style "),
 ]
 
-current_model = models[0]
+current_model = models[1]
+current_model_path = current_model.path
 pipe = StableDiffusionPipeline.from_pretrained(current_model.path, torch_dtype=torch.float16)
 if torch.cuda.is_available():
   pipe = pipe.to("cuda")
 
-
 device = "GPU 🔥" if torch.cuda.is_available() else "CPU 🥶"
+
+def custom_model_changed(path):
+  models[0].path = path
+  current_model = models[0]
+  return models[0].path
 
 def inference(model_name, prompt, guidance, steps, width=512, height=512, seed=0, img=None, strength=0.5, neg_prompt=""):
 
+  global current_model
+  for model in models:
+    if model.name == model_name:
+      current_model = model
+      model_path = current_model.path
+
   generator = torch.Generator('cuda').manual_seed(seed) if seed != 0 else None
-  
+
   if img is not None:
-    return img_to_img(model_name, prompt, neg_prompt, img, strength, guidance, steps, width, height, generator)
+    return img_to_img(model_path, prompt, neg_prompt, img, strength, guidance, steps, width, height, generator)
   else:
-    return txt_to_img(model_name, prompt, neg_prompt, guidance, steps, width, height, generator)
+    return txt_to_img(model_path, prompt, neg_prompt, guidance, steps, width, height, generator)
 
-def txt_to_img(model_name, prompt, neg_prompt, guidance, steps, width, height, generator=None):
+def txt_to_img(model_path, prompt, neg_prompt, guidance, steps, width, height, generator=None):
 
-    global current_model
     global pipe
-    if model_name != current_model.name:
-        for model in models:
-          if model.name == model_name:
-            current_model = model
+    global current_model_path
+    if model_path != current_model_path:
+        current_model_path = model_path
 
-        pipe = StableDiffusionPipeline.from_pretrained(current_model.path, torch_dtype=torch.float16)
+        pipe = StableDiffusionPipeline.from_pretrained(current_model_path, torch_dtype=torch.float16)
         if torch.cuda.is_available():
           pipe = pipe.to("cuda")
 
@@ -75,16 +85,14 @@ def txt_to_img(model_name, prompt, neg_prompt, guidance, steps, width, height, g
     image = results.images[0] if not results.nsfw_content_detected[0] else Image.open("nsfw.png")
     return image
 
-def img_to_img(model, prompt, neg_prompt, img, strength, guidance, steps, width, height, generator):
+def img_to_img(model_path, prompt, neg_prompt, img, strength, guidance, steps, width, height, generator):
 
-    global current_model
     global pipe
-    if model_name != current_model.name:
-        for model in models:
-          if model.name == model_name:
-            current_model = model
+    global current_model_path
+    if model_path != current_model_path:
+        current_model_path = model_path
 
-        pipe = StableDiffusionImg2ImgPipeline.from_pretrained(current_model.path, torch_dtype=torch.float16)
+        pipe = StableDiffusionImg2ImgPipeline.from_pretrained(current_model_path, torch_dtype=torch.float16)
         
         if torch.cuda.is_available():
               pipe = pipe.to("cuda")
@@ -152,7 +160,8 @@ with gr.Blocks(css=css) as demo:
     with gr.Row():
         
         with gr.Column():
-            model_name = gr.Dropdown(label="Model", choices=[m.name for m in models], value=models[0].name)
+            model_name = gr.Dropdown(label="Model", choices=[m.name for m in models], value=current_model.name)
+            custom_model_path = gr.Textbox(label="Custom model path", placeholder="Path to model, e.g. nitrosocke/Arcane-Diffusion", visible=False, interactive=True)
             prompt = gr.Textbox(label="Prompt", placeholder="Style prefix is applied automatically")
             run = gr.Button(value="Run")
 
@@ -170,17 +179,20 @@ with gr.Blocks(css=css) as demo:
 
         with gr.Column():
             image_out = gr.Image(height=512)
+            log = gr.Textbox()
 
+    model_name.change(lambda x: gr.update(visible = x == models[0].name), inputs=model_name, outputs=custom_model_path)
+    custom_model_path.change(custom_model_changed, inputs=custom_model_path, outputs=log)
     inputs = [model_name, prompt, guidance, steps, width, height, seed, image, strength, neg_prompt]
     prompt.submit(inference, inputs=inputs, outputs=image_out, scroll_to_output=True)
     run.click(inference, inputs=inputs, outputs=image_out, scroll_to_output=True)
   
     gr.Examples([
-        [models[0].name, "jason bateman disassembling the demon core", 7.5, 50],
-        [models[3].name, "portrait of dwayne johnson", 7.0, 75],
-        [models[4].name, "portrait of a beautiful alyx vance half life", 10, 50],
-        [models[5].name, "Aloy from Horizon: Zero Dawn, half body portrait, smooth, detailed armor, beautiful face, illustration", 7.0, 45],
-        [models[4].name, "fantasy portrait painting, digital art", 4.0, 30],
+        [models[1].name, "jason bateman disassembling the demon core", 7.5, 50],
+        [models[4].name, "portrait of dwayne johnson", 7.0, 75],
+        [models[5].name, "portrait of a beautiful alyx vance half life", 10, 50],
+        [models[6].name, "Aloy from Horizon: Zero Dawn, half body portrait, smooth, detailed armor, beautiful face, illustration", 7.0, 45],
+        [models[5].name, "fantasy portrait painting, digital art", 4.0, 30],
     ], [model_name, prompt, guidance, steps, seed], image_out, inference, cache_examples=not is_colab and torch.cuda.is_available())
   
     gr.Markdown('''
@@ -192,4 +204,4 @@ with gr.Blocks(css=css) as demo:
 
 if not is_colab:
   demo.queue(concurrency_count=4)
-demo.launch(debug=is_colab)
+demo.launch(debug=is_colab, share=is_colab)
