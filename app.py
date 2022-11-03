@@ -212,7 +212,7 @@ with gr.Blocks(css=css) as demo:
               strength = gr.Slider(label="Transformation strength", minimum=0, maximum=1, step=0.01, value=0.5)
 
     model_name.change(lambda x: gr.update(visible = x == models[0].name), inputs=model_name, outputs=custom_model_path)
-    custom_model_path.change(custom_model_changed, inputs=custom_model_path)
+    custom_model_path.change(custom_model_changed, inputs=custom_model_path, outputs=None)
     # n_images.change(lambda n: gr.Gallery().style(grid=[2 if n > 1 else 1], height="auto"), inputs=n_images, outputs=gallery)
 
     inputs = [model_name, prompt, guidance, steps, width, height, seed, image, strength, neg_prompt]
