@@ -13,6 +13,8 @@ class Model:
         self.name = name
         self.path = path
         self.prefix = prefix
+        self.pipe_t2i = None
+        self.pipe_i2i = None
 
 models = [
      Model("Custom model", "", ""),
@@ -27,17 +29,24 @@ models = [
      Model("Pony Diffusion", "AstraliteHeart/pony-diffusion", ""),
      Model("Robo Diffusion", "nousr/robo-diffusion", ""),
      Model("Cyberpunk Anime", "DGSpitzer/Cyberpunk-Anime-Diffusion", "dgs illustration style "),
-     Model("Tron Legacy", "dallinmackay/Tron-Legacy-diffusion", "trnlgcy ")
+     Model("Tron Legacy", "dallinmackay/Tron-Legacy-diffusion", "trnlgcy")
 ]
 
 last_mode = "txt2img"
 current_model = models[1]
 current_model_path = current_model.path
-pipe = StableDiffusionPipeline.from_pretrained(current_model.path, torch_dtype=torch.float16)
-# pipe_i2i = StableDiffusionImg2ImgPipeline.from_pretrained(current_model.path, torch_dtype=torch.float16)
-if torch.cuda.is_available():
-  pipe = pipe.to("cuda")
-  # pipe_i2i = pipe_i2i.to("cuda")
+
+if is_colab:
+  pipe = StableDiffusionPipeline.from_pretrained(current_model.path, torch_dtype=torch.float16)
+  if torch.cuda.is_available():
+    pipe = pipe.to("cuda")
+
+else: # download all models
+  vae = AutoencoderKL.from_pretrained(current_model, subfolder="vae", torch_dtype=torch.float16)
+  for model in models[1:]:
+    unet = UNet2DConditionModel.from_pretrained(model, subfolder="unet", torch_dtype=torch.float16)
+    model.pipe_t2i = StableDiffusionPipeline.from_pretrained(model, unet=unet, vae=vae, torch_dtype=torch.float16)
+    model.pipe_i2i = StableDiffusionImg2ImgPipeline.from_pretrained(model, unet=unet, vae=vae, torch_dtype=torch.float16)
 
 device = "GPU 🔥" if torch.cuda.is_available() else "CPU 🥶"
 
@@ -69,7 +78,12 @@ def txt_to_img(model_path, prompt, neg_prompt, guidance, steps, width, height, g
     if model_path != current_model_path or last_mode != "txt2img":
         current_model_path = model_path
 
-        pipe = StableDiffusionPipeline.from_pretrained(current_model_path, torch_dtype=torch.float16)
+        if is_colab:
+          pipe = StableDiffusionPipeline.from_pretrained(current_model_path, torch_dtype=torch.float16)
+        else:
+          pipe = pipe.to("cpu")
+          pipe = current_model.pipe_t2i
+
         if torch.cuda.is_available():
           pipe = pipe.to("cuda")
         last_mode = "txt2img"
@@ -95,7 +109,11 @@ def img_to_img(model_path, prompt, neg_prompt, img, strength, guidance, steps, w
     if model_path != current_model_path or last_mode != "img2img":
         current_model_path = model_path
 
-        pipe = StableDiffusionImg2ImgPipeline.from_pretrained(current_model_path, torch_dtype=torch.float16)
+        if is_colab:
+          pipe = StableDiffusionImg2ImgPipeline.from_pretrained(current_model_path, torch_dtype=torch.float16)
+        else:
+          pipe = pipe.to("cpu")
+          pipe = current_model.pipe_t2i
         
         if torch.cuda.is_available():
               pipe = pipe.to("cuda")
