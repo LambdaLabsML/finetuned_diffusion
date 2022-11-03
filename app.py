@@ -1,3 +1,4 @@
+from diffusers import AutoencoderKL, UNet2DConditionModel
 from diffusers import StableDiffusionPipeline
 from diffusers import StableDiffusionImg2ImgPipeline
 import gradio as gr
@@ -33,15 +34,17 @@ last_mode = "txt2img"
 current_model = models[1]
 current_model_path = current_model.path
 pipe = StableDiffusionPipeline.from_pretrained(current_model.path, torch_dtype=torch.float16)
+# pipe_i2i = StableDiffusionImg2ImgPipeline.from_pretrained(current_model.path, torch_dtype=torch.float16)
 if torch.cuda.is_available():
   pipe = pipe.to("cuda")
+  # pipe_i2i = pipe_i2i.to("cuda")
 
 device = "GPU 🔥" if torch.cuda.is_available() else "CPU 🥶"
 
 def custom_model_changed(path):
   models[0].path = path
+  global current_model
   current_model = models[0]
-  return models[0].path
 
 def inference(model_name, prompt, guidance, steps, width=512, height=512, seed=0, img=None, strength=0.5, neg_prompt=""):
 
