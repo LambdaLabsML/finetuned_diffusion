@@ -20,22 +20,22 @@ models = [
      Model("Custom model", "", ""),
      Model("Arcane", "nitrosocke/Arcane-Diffusion", "arcane style "),
      Model("Archer", "nitrosocke/archer-diffusion", "archer style "),
-     Model("Elden Ring", "nitrosocke/elden-ring-diffusion", "elden ring style "),
-     Model("Spider-Verse", "nitrosocke/spider-verse-diffusion", "spiderverse style "),
-     Model("Modern Disney", "nitrosocke/modern-disney-diffusion", "modern disney style "),
-     Model("Classic Disney", "nitrosocke/classic-anim-diffusion", ""),
-     Model("Waifu", "hakurei/waifu-diffusion", ""),
-     Model("Pokémon", "lambdalabs/sd-pokemon-diffusers", ""),
-     Model("Pony Diffusion", "AstraliteHeart/pony-diffusion", ""),
-     Model("Robo Diffusion", "nousr/robo-diffusion", ""),
-     Model("Cyberpunk Anime", "DGSpitzer/Cyberpunk-Anime-Diffusion", "dgs illustration style "),
-     Model("Tron Legacy", "dallinmackay/Tron-Legacy-diffusion", "trnlgcy")
+    #  Model("Elden Ring", "nitrosocke/elden-ring-diffusion", "elden ring style "),
+    #  Model("Spider-Verse", "nitrosocke/spider-verse-diffusion", "spiderverse style "),
+    #  Model("Modern Disney", "nitrosocke/modern-disney-diffusion", "modern disney style "),
+    #  Model("Classic Disney", "nitrosocke/classic-anim-diffusion", ""),
+    #  Model("Waifu", "hakurei/waifu-diffusion", ""),
+    #  Model("Pokémon", "lambdalabs/sd-pokemon-diffusers", ""),
+    #  Model("Pony Diffusion", "AstraliteHeart/pony-diffusion", ""),
+    #  Model("Robo Diffusion", "nousr/robo-diffusion", ""),
+    #  Model("Cyberpunk Anime", "DGSpitzer/Cyberpunk-Anime-Diffusion", "dgs illustration style "),
+    #  Model("Tron Legacy", "dallinmackay/Tron-Legacy-diffusion", "trnlgcy")
 ]
 
 last_mode = "txt2img"
 current_model = models[1]
 current_model_path = current_model.path
-pipe = None
+# pipe = None
 
 if is_colab:
   pipe = StableDiffusionPipeline.from_pretrained(current_model.path, torch_dtype=torch.float16)
@@ -116,7 +116,7 @@ def img_to_img(model_path, prompt, neg_prompt, img, strength, guidance, steps, w
           pipe = StableDiffusionImg2ImgPipeline.from_pretrained(current_model_path, torch_dtype=torch.float16)
         else:
           pipe = pipe.to("cpu")
-          pipe = current_model.pipe_t2i
+          pipe = current_model.pipe_i2i
         
         if torch.cuda.is_available():
               pipe = pipe.to("cuda")
@@ -246,7 +246,7 @@ with gr.Blocks(css=css) as demo:
         [models[5].name, "portrait of a beautiful alyx vance half life", 10, 50],
         [models[6].name, "Aloy from Horizon: Zero Dawn, half body portrait, smooth, detailed armor, beautiful face, illustration", 7.0, 45],
         [models[5].name, "fantasy portrait painting, digital art", 4.0, 30],
-    ], [model_name, prompt, guidance, steps, seed], image_out, inference, cache_examples=not is_colab and torch.cuda.is_available())
+    ], [model_name, prompt, guidance, steps, seed], image_out, inference, cache_examples=False)# not is_colab and torch.cuda.is_available())
     # ex.dataset.headers = [""]
 
     gr.Markdown('''
