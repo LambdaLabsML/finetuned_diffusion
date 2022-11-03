@@ -42,7 +42,7 @@ if is_colab:
     pipe = pipe.to("cuda")
 
 else: # download all models
-  vae = AutoencoderKL.from_pretrained(current_model, subfolder="vae", torch_dtype=torch.float16)
+  vae = AutoencoderKL.from_pretrained(current_model.path, subfolder="vae", torch_dtype=torch.float16)
   for model in models[1:]:
     unet = UNet2DConditionModel.from_pretrained(model.path, subfolder="unet", torch_dtype=torch.float16)
     model.pipe_t2i = StableDiffusionPipeline.from_pretrained(model.path, unet=unet, vae=vae, torch_dtype=torch.float16)
