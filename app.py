@@ -39,8 +39,6 @@ pipe = None
 
 if is_colab:
   pipe = StableDiffusionPipeline.from_pretrained(current_model.path, torch_dtype=torch.float16)
-  if torch.cuda.is_available():
-    pipe = pipe.to("cuda")
 
 else: # download all models
   vae = AutoencoderKL.from_pretrained(current_model.path, subfolder="vae", torch_dtype=torch.float16)
@@ -49,6 +47,9 @@ else: # download all models
     model.pipe_t2i = StableDiffusionPipeline.from_pretrained(model.path, unet=unet, vae=vae, torch_dtype=torch.float16)
     model.pipe_i2i = StableDiffusionImg2ImgPipeline.from_pretrained(model.path, unet=unet, vae=vae, torch_dtype=torch.float16)
   pipe = models[1].pipe_t2i
+  
+if torch.cuda.is_available():
+  pipe = pipe.to("cuda")
 
 device = "GPU 🔥" if torch.cuda.is_available() else "CPU 🥶"
 
