@@ -35,6 +35,7 @@ models = [
 last_mode = "txt2img"
 current_model = models[1]
 current_model_path = current_model.path
+pipe = None
 
 if is_colab:
   pipe = StableDiffusionPipeline.from_pretrained(current_model.path, torch_dtype=torch.float16)
@@ -47,6 +48,7 @@ else: # download all models
     unet = UNet2DConditionModel.from_pretrained(model.path, subfolder="unet", torch_dtype=torch.float16)
     model.pipe_t2i = StableDiffusionPipeline.from_pretrained(model.path, unet=unet, vae=vae, torch_dtype=torch.float16)
     model.pipe_i2i = StableDiffusionImg2ImgPipeline.from_pretrained(model.path, unet=unet, vae=vae, torch_dtype=torch.float16)
+  pipe = models[1].pipe_t2i
 
 device = "GPU 🔥" if torch.cuda.is_available() else "CPU 🥶"
 
