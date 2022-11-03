@@ -20,16 +20,16 @@ models = [
      Model("Custom model", "", ""),
      Model("Arcane", "nitrosocke/Arcane-Diffusion", "arcane style "),
      Model("Archer", "nitrosocke/archer-diffusion", "archer style "),
-    #  Model("Elden Ring", "nitrosocke/elden-ring-diffusion", "elden ring style "),
-    #  Model("Spider-Verse", "nitrosocke/spider-verse-diffusion", "spiderverse style "),
-    #  Model("Modern Disney", "nitrosocke/modern-disney-diffusion", "modern disney style "),
-    #  Model("Classic Disney", "nitrosocke/classic-anim-diffusion", ""),
-    #  Model("Waifu", "hakurei/waifu-diffusion", ""),
-    #  Model("Pokémon", "lambdalabs/sd-pokemon-diffusers", ""),
-    #  Model("Pony Diffusion", "AstraliteHeart/pony-diffusion", ""),
-    #  Model("Robo Diffusion", "nousr/robo-diffusion", ""),
-    #  Model("Cyberpunk Anime", "DGSpitzer/Cyberpunk-Anime-Diffusion", "dgs illustration style "),
-    #  Model("Tron Legacy", "dallinmackay/Tron-Legacy-diffusion", "trnlgcy")
+     Model("Elden Ring", "nitrosocke/elden-ring-diffusion", "elden ring style "),
+     Model("Spider-Verse", "nitrosocke/spider-verse-diffusion", "spiderverse style "),
+     Model("Modern Disney", "nitrosocke/modern-disney-diffusion", "modern disney style "),
+     Model("Classic Disney", "nitrosocke/classic-anim-diffusion", ""),
+     Model("Waifu", "hakurei/waifu-diffusion", ""),
+     Model("Pokémon", "lambdalabs/sd-pokemon-diffusers", ""),
+     Model("Pony Diffusion", "AstraliteHeart/pony-diffusion", ""),
+     Model("Robo Diffusion", "nousr/robo-diffusion", ""),
+     Model("Cyberpunk Anime", "DGSpitzer/Cyberpunk-Anime-Diffusion", "dgs illustration style "),
+     Model("Tron Legacy", "dallinmackay/Tron-Legacy-diffusion", "trnlgcy")
 ]
 
 last_mode = "txt2img"
