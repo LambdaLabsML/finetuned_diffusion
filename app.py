@@ -256,6 +256,6 @@ with gr.Blocks(css=css) as demo:
       ![visitors](https://visitor-badge.glitch.me/badge?page_id=anzorq.finetuned_diffusion)
     ''')
 
-if not is_colab:
-  demo.queue(concurrency_count=4)
+#if not is_colab:
+demo.queue(concurrency_count=4)
 demo.launch(debug=is_colab, share=is_colab)
