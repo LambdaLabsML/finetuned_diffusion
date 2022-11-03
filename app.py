@@ -27,7 +27,7 @@ models = [
      Model("Pony Diffusion", "AstraliteHeart/pony-diffusion", ""),
      Model("Robo Diffusion", "nousr/robo-diffusion", ""),
      Model("Cyberpunk Anime", "DGSpitzer/Cyberpunk-Anime-Diffusion", "dgs illustration style "),
-     Model("Tron Legacy", "dallinmackay/Tron-Legacy-diffusion", "trnlgcy")
+     Model("Tron Legacy", "dallinmackay/Tron-Legacy-diffusion", "trnlgcy ")
 ]
 
 last_mode = "txt2img"
