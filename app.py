@@ -253,9 +253,9 @@ with gr.Blocks(css=css) as demo:
     ], [model_name, prompt, guidance, steps, seed], image_out, inference, cache_examples=False)
 
     gr.Markdown('''
-      Models by [@nitrosocke](https://huggingface.co/nitrosocke), [@Helixngc7293](https://twitter.com/DGSpitzer) and others. ❤️<br>
+      Models by [@nitrosocke](https://huggingface.co/nitrosocke), [@haruu1367](https://twitter.com/haruu1367), [@Helixngc7293](https://twitter.com/DGSpitzer) and others. ❤️<br>
       Space by: [![Twitter Follow](https://img.shields.io/twitter/follow/hahahahohohe?label=%40anzorq&style=social)](https://twitter.com/hahahahohohe)
-  
+        
       ![visitors](https://visitor-badge.glitch.me/badge?page_id=anzorq.finetuned_diffusion)
     ''')
 
