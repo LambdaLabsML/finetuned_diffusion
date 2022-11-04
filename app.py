@@ -21,7 +21,7 @@ models = [
      Model("Elden Ring", "nitrosocke/elden-ring-diffusion", "elden ring style "),
      Model("Spider-Verse", "nitrosocke/spider-verse-diffusion", "spiderverse style "),
      Model("Modern Disney", "nitrosocke/mo-di-diffusion", "modern disney style "),
-     Model("Classic Disney", "nitrosocke/classic-anim-diffusion", ""),
+     Model("Classic Disney", "nitrosocke/classic-anim-diffusion", "classic disney style "),
      Model("Waifu", "hakurei/waifu-diffusion", ""),
      Model("Pokémon", "lambdalabs/sd-pokemon-diffusers", ""),
      Model("Pony Diffusion", "AstraliteHeart/pony-diffusion", ""),
