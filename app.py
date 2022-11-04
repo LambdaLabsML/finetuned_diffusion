@@ -264,5 +264,5 @@ with gr.Blocks(css=css) as demo:
     ''')
 
 if not is_colab:
-  demo.queue(concurrency_count=4)
+  demo.queue(concurrency_count=1)
 demo.launch(debug=is_colab, share=is_colab)
