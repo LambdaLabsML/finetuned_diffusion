@@ -1,6 +1,6 @@
 def is_google_colab():
     try:
-          import google.colab
-          return True
+        import google.colab
+        return True
     except:
-          return False
+        return False
