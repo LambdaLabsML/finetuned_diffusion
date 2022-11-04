@@ -20,16 +20,16 @@ models = [
      Model("Custom model", "", ""),
      Model("Arcane", "nitrosocke/Arcane-Diffusion", "arcane style "),
      Model("Archer", "nitrosocke/archer-diffusion", "archer style "),
-     Model("Elden Ring", "nitrosocke/elden-ring-diffusion", "elden ring style "),
-     Model("Spider-Verse", "nitrosocke/spider-verse-diffusion", "spiderverse style "),
-     Model("Modern Disney", "nitrosocke/modern-disney-diffusion", "modern disney style "),
-     Model("Classic Disney", "nitrosocke/classic-anim-diffusion", ""),
-     Model("Waifu", "hakurei/waifu-diffusion", ""),
-     Model("Pokémon", "lambdalabs/sd-pokemon-diffusers", ""),
-     Model("Pony Diffusion", "AstraliteHeart/pony-diffusion", ""),
-     Model("Robo Diffusion", "nousr/robo-diffusion", ""),
-     Model("Cyberpunk Anime", "DGSpitzer/Cyberpunk-Anime-Diffusion", "dgs illustration style "),
-     Model("Tron Legacy", "dallinmackay/Tron-Legacy-diffusion", "trnlgcy")
+    #  Model("Elden Ring", "nitrosocke/elden-ring-diffusion", "elden ring style "),
+    #  Model("Spider-Verse", "nitrosocke/spider-verse-diffusion", "spiderverse style "),
+    #  Model("Modern Disney", "nitrosocke/modern-disney-diffusion", "modern disney style "),
+    #  Model("Classic Disney", "nitrosocke/classic-anim-diffusion", ""),
+    #  Model("Waifu", "hakurei/waifu-diffusion", ""),
+    #  Model("Pokémon", "lambdalabs/sd-pokemon-diffusers", ""),
+    #  Model("Pony Diffusion", "AstraliteHeart/pony-diffusion", ""),
+    #  Model("Robo Diffusion", "nousr/robo-diffusion", ""),
+    #  Model("Cyberpunk Anime", "DGSpitzer/Cyberpunk-Anime-Diffusion", "dgs illustration style "),
+    #  Model("Tron Legacy", "dallinmackay/Tron-Legacy-diffusion", "trnlgcy")
 ]
 
 last_mode = "txt2img"
@@ -43,9 +43,12 @@ if is_colab:
 else: # download all models
   vae = AutoencoderKL.from_pretrained(current_model.path, subfolder="vae", torch_dtype=torch.float16)
   for model in models[1:]:
-    unet = UNet2DConditionModel.from_pretrained(model.path, subfolder="unet", torch_dtype=torch.float16)
-    model.pipe_t2i = StableDiffusionPipeline.from_pretrained(model.path, unet=unet, vae=vae, torch_dtype=torch.float16)
-    model.pipe_i2i = StableDiffusionImg2ImgPipeline.from_pretrained(model.path, unet=unet, vae=vae, torch_dtype=torch.float16)
+    try:
+        unet = UNet2DConditionModel.from_pretrained(model.path, subfolder="unet", torch_dtype=torch.float16)
+        model.pipe_t2i = StableDiffusionPipeline.from_pretrained(model.path, unet=unet, vae=vae, torch_dtype=torch.float16)
+        model.pipe_i2i = StableDiffusionImg2ImgPipeline.from_pretrained(model.path, unet=unet, vae=vae, torch_dtype=torch.float16)
+    except:
+        models.remove(model)
   pipe = models[1].pipe_t2i
   
 if torch.cuda.is_available():
@@ -81,10 +84,11 @@ def txt_to_img(model_path, prompt, neg_prompt, guidance, steps, width, height, g
     if model_path != current_model_path or last_mode != "txt2img":
         current_model_path = model_path
 
-        if is_colab:
+        if is_colab or current_model == models[0]:
           pipe = StableDiffusionPipeline.from_pretrained(current_model_path, torch_dtype=torch.float16)
         else:
-          pipe = pipe.to("cpu")
+          # pipe = pipe.to("cpu")
+          pipe.to("cpu")
           pipe = current_model.pipe_t2i
 
         if torch.cuda.is_available():
@@ -112,14 +116,15 @@ def img_to_img(model_path, prompt, neg_prompt, img, strength, guidance, steps, w
     if model_path != current_model_path or last_mode != "img2img":
         current_model_path = model_path
 
-        if is_colab:
+        if is_colab or current_model == models[0]:
           pipe = StableDiffusionImg2ImgPipeline.from_pretrained(current_model_path, torch_dtype=torch.float16)
         else:
-          pipe = pipe.to("cpu")
+          # pipe = pipe.to("cpu")
+          pipe.to("cpu")
           pipe = current_model.pipe_i2i
         
         if torch.cuda.is_available():
-              pipe = pipe.to("cuda")
+          pipe = pipe.to("cuda")
         last_mode = "img2img"
 
     prompt = current_model.prefix + prompt
@@ -190,47 +195,49 @@ with gr.Blocks(css=css) as demo:
                <a href="https://huggingface.co/nitrosocke/Arcane-Diffusion">Arcane</a>, <a href="https://huggingface.co/nitrosocke/archer-diffusion">Archer</a>, <a href="https://huggingface.co/nitrosocke/elden-ring-diffusion">Elden Ring</a>, <a href="https://huggingface.co/nitrosocke/spider-verse-diffusion">Spiderverse</a>, <a href="https://huggingface.co/nitrosocke/modern-disney-diffusion">Modern Disney</a>, <a href="https://huggingface.co/hakurei/waifu-diffusion">Waifu</a>, <a href="https://huggingface.co/lambdalabs/sd-pokemon-diffusers">Pokemon</a>, <a href="https://huggingface.co/yuk/fuyuko-waifu-diffusion">Fuyuko Waifu</a>, <a href="https://huggingface.co/AstraliteHeart/pony-diffusion">Pony</a>, <a href="https://huggingface.co/sd-dreambooth-library/herge-style">Hergé (Tintin)</a>, <a href="https://huggingface.co/nousr/robo-diffusion">Robo</a>, <a href="https://huggingface.co/DGSpitzer/Cyberpunk-Anime-Diffusion">Cyberpunk Anime</a> + any other custom Diffusers 🧨 SD model hosted on HuggingFace 🤗.
               </p>
               <p>Don't want to wait in queue? <a href="https://colab.research.google.com/gist/qunash/42112fb104509c24fd3aa6d1c11dd6e0/copy-of-fine-tuned-diffusion-gradio.ipynb"><img data-canonical-src="https://colab.research.google.com/assets/colab-badge.svg" alt="Open In Colab" src="https://camo.githubusercontent.com/84f0493939e0c4de4e6dbe113251b4bfb5353e57134ffd9fcab6b8714514d4d1/68747470733a2f2f636f6c61622e72657365617263682e676f6f676c652e636f6d2f6173736574732f636f6c61622d62616467652e737667"></a></p>
-               Running on <b>{device}</b>
+               Running on <b>{device}</b>{(" in a <b>Google Colab</b>." if is_colab else "")}
               </p>
             </div>
         """
     )
     with gr.Row():
         
-        with gr.Group():
-            model_name = gr.Dropdown(label="Model", choices=[m.name for m in models], value=current_model.name)
-            custom_model_path = gr.Textbox(label="Custom model path", placeholder="Path to model, e.g. nitrosocke/Arcane-Diffusion", visible=False, interactive=True)
-            
-            with gr.Row():
-              prompt = gr.Textbox(label="Prompt", show_label=False, max_lines=2,placeholder="Enter prompt. Style applied automatically").style(container=False)
-              generate = gr.Button(value="Generate").style(rounded=(False, True, True, False))
-
-
-            image_out = gr.Image(height=512)
-            # gallery = gr.Gallery(
-            #     label="Generated images", show_label=False, elem_id="gallery"
-            # ).style(grid=[1], height="auto")
-
-        with gr.Tab("Options"):
+        with gr.Column(scale=55):
           with gr.Group():
-            neg_prompt = gr.Textbox(label="Negative prompt", placeholder="What to exclude from the image")
+              model_name = gr.Dropdown(label="Model", choices=[m.name for m in models], value=current_model.name)
+              custom_model_path = gr.Textbox(label="Custom model path", placeholder="Path to model, e.g. nitrosocke/Arcane-Diffusion", visible=False, interactive=True)
+              
+              with gr.Row():
+                prompt = gr.Textbox(label="Prompt", show_label=False, max_lines=2,placeholder="Enter prompt. Style applied automatically").style(container=False)
+                generate = gr.Button(value="Generate").style(rounded=(False, True, True, False))
 
-            # n_images = gr.Slider(label="Images", value=1, minimum=1, maximum=4, step=1)
 
-            with gr.Row():
-              guidance = gr.Slider(label="Guidance scale", value=7.5, maximum=15)
-              steps = gr.Slider(label="Steps", value=50, minimum=2, maximum=100, step=1)
+              image_out = gr.Image(height=512)
+              # gallery = gr.Gallery(
+              #     label="Generated images", show_label=False, elem_id="gallery"
+              # ).style(grid=[1], height="auto")
 
-            with gr.Row():
-              width = gr.Slider(label="Width", value=512, minimum=64, maximum=1024, step=8)
-              height = gr.Slider(label="Height", value=512, minimum=64, maximum=1024, step=8)
-
-            seed = gr.Slider(0, 2147483647, label='Seed (0 = random)', value=0, step=1)
-
-        with gr.Tab("Image to image"):
+        with gr.Column(scale=45):
+          with gr.Tab("Options"):
             with gr.Group():
-              image = gr.Image(label="Image", height=256, tool="editor", type="pil")
-              strength = gr.Slider(label="Transformation strength", minimum=0, maximum=1, step=0.01, value=0.5)
+              neg_prompt = gr.Textbox(label="Negative prompt", placeholder="What to exclude from the image")
+
+              # n_images = gr.Slider(label="Images", value=1, minimum=1, maximum=4, step=1)
+
+              with gr.Row():
+                guidance = gr.Slider(label="Guidance scale", value=7.5, maximum=15)
+                steps = gr.Slider(label="Steps", value=50, minimum=2, maximum=100, step=1)
+
+              with gr.Row():
+                width = gr.Slider(label="Width", value=512, minimum=64, maximum=1024, step=8)
+                height = gr.Slider(label="Height", value=512, minimum=64, maximum=1024, step=8)
+
+              seed = gr.Slider(0, 2147483647, label='Seed (0 = random)', value=0, step=1)
+
+          with gr.Tab("Image to image"):
+              with gr.Group():
+                image = gr.Image(label="Image", height=256, tool="editor", type="pil")
+                strength = gr.Slider(label="Transformation strength", minimum=0, maximum=1, step=0.01, value=0.5)
 
     model_name.change(lambda x: gr.update(visible = x == models[0].name), inputs=model_name, outputs=custom_model_path)
     custom_model_path.change(custom_model_changed, inputs=custom_model_path, outputs=None)
@@ -240,13 +247,13 @@ with gr.Blocks(css=css) as demo:
     prompt.submit(inference, inputs=inputs, outputs=image_out)
     generate.click(inference, inputs=inputs, outputs=image_out)
 
-    ex = gr.Examples([
-        [models[1].name, "jason bateman disassembling the demon core", 7.5, 50],
-        [models[4].name, "portrait of dwayne johnson", 7.0, 75],
-        [models[5].name, "portrait of a beautiful alyx vance half life", 10, 50],
-        [models[6].name, "Aloy from Horizon: Zero Dawn, half body portrait, smooth, detailed armor, beautiful face, illustration", 7.0, 45],
-        [models[5].name, "fantasy portrait painting, digital art", 4.0, 30],
-    ], [model_name, prompt, guidance, steps, seed], image_out, inference, cache_examples=False)# not is_colab and torch.cuda.is_available())
+    # ex = gr.Examples([
+    #     [models[1].name, "jason bateman disassembling the demon core", 7.5, 50],
+    #     [models[4].name, "portrait of dwayne johnson", 7.0, 75],
+    #     [models[5].name, "portrait of a beautiful alyx vance half life", 10, 50],
+    #     [models[6].name, "Aloy from Horizon: Zero Dawn, half body portrait, smooth, detailed armor, beautiful face, illustration", 7.0, 45],
+    #     [models[5].name, "fantasy portrait painting, digital art", 4.0, 30],
+    # ], [model_name, prompt, guidance, steps, seed], image_out, inference, cache_examples=False)#not is_colab and torch.cuda.is_available())
     # ex.dataset.headers = [""]
 
     gr.Markdown('''
@@ -256,6 +263,6 @@ with gr.Blocks(css=css) as demo:
       ![visitors](https://visitor-badge.glitch.me/badge?page_id=anzorq.finetuned_diffusion)
     ''')
 
-#if not is_colab:
-demo.queue(concurrency_count=4)
-demo.launch()
+if not is_colab:
+  demo.queue(concurrency_count=4)
+demo.launch(debug=True, share=True)
