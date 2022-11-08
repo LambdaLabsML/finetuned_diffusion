@@ -1,4 +1,4 @@
-from diffusers import AutoencoderKL, UNet2DConditionModel, StableDiffusionPipeline, StableDiffusionImg2ImgPipeline
+from diffusers import AutoencoderKL, UNet2DConditionModel, StableDiffusionPipeline, StableDiffusionImg2ImgPipeline, DPMSolverMultistepScheduler
 import gradio as gr
 import torch
 from PIL import Image
@@ -15,35 +15,54 @@ class Model:
         self.pipe_i2i = None
 
 models = [
-     Model("Custom model", "", ""),
      Model("Arcane", "nitrosocke/Arcane-Diffusion", "arcane style "),
      Model("Archer", "nitrosocke/archer-diffusion", "archer style "),
      Model("Elden Ring", "nitrosocke/elden-ring-diffusion", "elden ring style "),
      Model("Spider-Verse", "nitrosocke/spider-verse-diffusion", "spiderverse style "),
      Model("Modern Disney", "nitrosocke/mo-di-diffusion", "modern disney style "),
      Model("Classic Disney", "nitrosocke/classic-anim-diffusion", "classic disney style "),
+     Model("Loving Vincent (Van Gogh)", "dallinmackay/Van-Gogh-diffusion", "lvngvncnt "),
+     Model("Redshift renderer (Cinema4D)", "nitrosocke/redshift-diffusion", "redshift style "),
+     Model("Midjourney v4 style", "prompthero/midjourney-v4-diffusion", "mdjrny-v4 style "),
      Model("Waifu", "hakurei/waifu-diffusion", ""),
      Model("Pokémon", "lambdalabs/sd-pokemon-diffusers", ""),
      Model("Pony Diffusion", "AstraliteHeart/pony-diffusion", ""),
      Model("Robo Diffusion", "nousr/robo-diffusion", ""),
      Model("Cyberpunk Anime", "DGSpitzer/Cyberpunk-Anime-Diffusion", "dgs illustration style "),
      Model("Tron Legacy", "dallinmackay/Tron-Legacy-diffusion", "trnlgcy ")
-]
+  ]
+
+scheduler = DPMSolverMultistepScheduler(
+    beta_start=0.00085,
+    beta_end=0.012,
+    beta_schedule="scaled_linear",
+    num_train_timesteps=1000,
+    trained_betas=None,
+    predict_epsilon=True,
+    thresholding=False,
+    algorithm_type="dpmsolver++",
+    solver_type="midpoint",
+    lower_order_final=True,
+)
+
+if is_colab:
+  models.insert(0, Model("Custom model", "", ""))
+  custom_model = models[0]
 
 last_mode = "txt2img"
-current_model = models[1]
+current_model = models[1] if is_colab else models[0]
 current_model_path = current_model.path
 
 if is_colab:
-  pipe = StableDiffusionPipeline.from_pretrained(current_model.path, torch_dtype=torch.float16)
+  pipe = StableDiffusionPipeline.from_pretrained(current_model.path, torch_dtype=torch.float16, scheduler=scheduler)
 
 else: # download all models
   vae = AutoencoderKL.from_pretrained(current_model.path, subfolder="vae", torch_dtype=torch.float16)
   for model in models[1:]:
     try:
         unet = UNet2DConditionModel.from_pretrained(model.path, subfolder="unet", torch_dtype=torch.float16)
-        model.pipe_t2i = StableDiffusionPipeline.from_pretrained(model.path, unet=unet, vae=vae, torch_dtype=torch.float16)
-        model.pipe_i2i = StableDiffusionImg2ImgPipeline.from_pretrained(model.path, unet=unet, vae=vae, torch_dtype=torch.float16)
+        model.pipe_t2i = StableDiffusionPipeline.from_pretrained(model.path, unet=unet, vae=vae, torch_dtype=torch.float16, scheduler=scheduler)
+        model.pipe_i2i = StableDiffusionImg2ImgPipeline.from_pretrained(model.path, unet=unet, vae=vae, torch_dtype=torch.float16, scheduler=scheduler)
     except:
         models.remove(model)
   pipe = models[1].pipe_t2i
@@ -58,7 +77,7 @@ def custom_model_changed(path):
   global current_model
   current_model = models[0]
 
-def inference(model_name, prompt, guidance, steps, width=512, height=512, seed=0, img=None, strength=0.5, neg_prompt=""):
+def inference(model_name, prompt, guidance, steps, width=512, height=512, seed=0, img=None, strength=0.5, neg_prompt="", inpaint_image=None):
 
   global current_model
   for model in models:
@@ -71,9 +90,9 @@ def inference(model_name, prompt, guidance, steps, width=512, height=512, seed=0
   if img is not None:
     return img_to_img(model_path, prompt, neg_prompt, img, strength, guidance, steps, width, height, generator)
   else:
-    return txt_to_img(model_path, prompt, neg_prompt, guidance, steps, width, height, generator)
+    return txt_to_img(model_path, prompt, neg_prompt, guidance, steps, width, height, generator, inpaint_image)
 
-def txt_to_img(model_path, prompt, neg_prompt, guidance, steps, width, height, generator=None):
+def txt_to_img(model_path, prompt, neg_prompt, guidance, steps, width, height, generator=None, inpaint_image=None):
 
     global last_mode
     global pipe
@@ -81,8 +100,8 @@ def txt_to_img(model_path, prompt, neg_prompt, guidance, steps, width, height, g
     if model_path != current_model_path or last_mode != "txt2img":
         current_model_path = model_path
 
-        if is_colab or current_model == models[0]:
-          pipe = StableDiffusionPipeline.from_pretrained(current_model_path, torch_dtype=torch.float16)
+        if is_colab or current_model == custom_model:
+          pipe = StableDiffusionPipeline.from_pretrained(current_model_path, torch_dtype=torch.float16, scheduler=scheduler)
         else:
           pipe.to("cpu")
           pipe = current_model.pipe_t2i
@@ -92,10 +111,17 @@ def txt_to_img(model_path, prompt, neg_prompt, guidance, steps, width, height, g
         last_mode = "txt2img"
 
     prompt = current_model.prefix + prompt
+
+    if inpaint_image is not None:
+      init_image = inpaint_image["image"].convert("RGB").resize((width, height))
+      mask = inpaint_image["mask"].convert("RGB").resize((width, height))
+  
     result = pipe(
       prompt,
       negative_prompt = neg_prompt,
       # num_images_per_prompt=n_images,
+      image = init_image,
+      mask_image = mask,
       num_inference_steps = int(steps),
       guidance_scale = guidance,
       width = width,
@@ -112,8 +138,8 @@ def img_to_img(model_path, prompt, neg_prompt, img, strength, guidance, steps, w
     if model_path != current_model_path or last_mode != "img2img":
         current_model_path = model_path
 
-        if is_colab or current_model == models[0]:
-          pipe = StableDiffusionImg2ImgPipeline.from_pretrained(current_model_path, torch_dtype=torch.float16)
+        if is_colab or current_model == custom_model:
+          pipe = StableDiffusionImg2ImgPipeline.from_pretrained(current_model_path, torch_dtype=torch.float16, scheduler=scheduler)
         else:
           pipe.to("cpu")
           pipe = current_model.pipe_i2i
@@ -145,38 +171,7 @@ def replace_nsfw_images(results):
         results.images[i] = Image.open("nsfw.png")
     return results.images[0]
 
-css = """
-  <style>
-  .finetuned-diffusion-div {
-      text-align: center;
-      max-width: 700px;
-      margin: 0 auto;
-    }
-    .finetuned-diffusion-div div {
-      display: inline-flex;
-      align-items: center;
-      gap: 0.8rem;
-      font-size: 1.75rem;
-    }
-    .finetuned-diffusion-div div h1 {
-      font-weight: 900;
-      margin-bottom: 7px;
-    }
-    .finetuned-diffusion-div p {
-      margin-bottom: 10px;
-      font-size: 94%;
-    }
-    .finetuned-diffusion-div p a {
-      text-decoration: underline;
-    }
-    .tabs {
-      margin-top: 0px;
-      margin-bottom: 0px;
-    }
-    #gallery {
-      min-height: 20rem;
-    }
-  </style>
+css = """.finetuned-diffusion-div div{display:inline-flex;align-items:center;gap:.8rem;font-size:1.75rem}.finetuned-diffusion-div div h1{font-weight:900;margin-bottom:7px}.finetuned-diffusion-div p{margin-bottom:10px;font-size:94%}.finetuned-diffusion-div p a{text-decoration:underline}.tabs{margin-top:0;margin-bottom:0}#gallery{min-height:20rem}
 """
 with gr.Blocks(css=css) as demo:
     gr.HTML(
@@ -189,7 +184,7 @@ with gr.Blocks(css=css) as demo:
                Demo for multiple fine-tuned Stable Diffusion models, trained on different styles: <br>
                <a href="https://huggingface.co/nitrosocke/Arcane-Diffusion">Arcane</a>, <a href="https://huggingface.co/nitrosocke/archer-diffusion">Archer</a>, <a href="https://huggingface.co/nitrosocke/elden-ring-diffusion">Elden Ring</a>, <a href="https://huggingface.co/nitrosocke/spider-verse-diffusion">Spider-Verse</a>, <a href="https://huggingface.co/nitrosocke/modern-disney-diffusion">Modern Disney</a>, <a href="https://huggingface.co/nitrosocke/classic-anim-diffusion">Classic Disney</a>, <a href="https://huggingface.co/hakurei/waifu-diffusion">Waifu</a>, <a href="https://huggingface.co/lambdalabs/sd-pokemon-diffusers">Pokémon</a>, <a href="https://huggingface.co/AstraliteHeart/pony-diffusion">Pony Diffusion</a>, <a href="https://huggingface.co/nousr/robo-diffusion">Robo Diffusion</a>, <a href="https://huggingface.co/DGSpitzer/Cyberpunk-Anime-Diffusion">Cyberpunk Anime</a>, <a href="https://huggingface.co/dallinmackay/Tron-Legacy-diffusion">Tron Legacy</a> + any other custom Diffusers 🧨 SD model hosted on HuggingFace 🤗.
               </p>
-              <p>Don't want to wait in queue? <a href="https://colab.research.google.com/gist/qunash/42112fb104509c24fd3aa6d1c11dd6e0/copy-of-fine-tuned-diffusion-gradio.ipynb"><img data-canonical-src="https://colab.research.google.com/assets/colab-badge.svg" alt="Open In Colab" src="https://camo.githubusercontent.com/84f0493939e0c4de4e6dbe113251b4bfb5353e57134ffd9fcab6b8714514d4d1/68747470733a2f2f636f6c61622e72657365617263682e676f6f676c652e636f6d2f6173736574732f636f6c61622d62616467652e737667"></a></p>
+              <p>You can skip the queue and load custom models in the colab: <a href="https://colab.research.google.com/gist/qunash/42112fb104509c24fd3aa6d1c11dd6e0/copy-of-fine-tuned-diffusion-gradio.ipynb"><img data-canonical-src="https://colab.research.google.com/assets/colab-badge.svg" alt="Open In Colab" src="https://camo.githubusercontent.com/84f0493939e0c4de4e6dbe113251b4bfb5353e57134ffd9fcab6b8714514d4d1/68747470733a2f2f636f6c61622e72657365617263682e676f6f676c652e636f6d2f6173736574732f636f6c61622d62616467652e737667"></a></p>
                Running on <b>{device}</b>{(" in a <b>Google Colab</b>." if is_colab else "")}
               </p>
             </div>
@@ -223,7 +218,7 @@ with gr.Blocks(css=css) as demo:
 
               with gr.Row():
                 guidance = gr.Slider(label="Guidance scale", value=7.5, maximum=15)
-                steps = gr.Slider(label="Steps", value=50, minimum=2, maximum=100, step=1)
+                steps = gr.Slider(label="Steps", value=25, minimum=2, maximum=75, step=1)
 
               with gr.Row():
                 width = gr.Slider(label="Width", value=512, minimum=64, maximum=1024, step=8)
@@ -236,11 +231,15 @@ with gr.Blocks(css=css) as demo:
                 image = gr.Image(label="Image", height=256, tool="editor", type="pil")
                 strength = gr.Slider(label="Transformation strength", minimum=0, maximum=1, step=0.01, value=0.5)
 
+          with gr.Tab("Inpainting"):
+            inpaint_image = gr.Image(source='upload', tool='sketch', type="pil", label="Upload").style(height=256)
+
     model_name.change(lambda x: gr.update(visible = x == models[0].name), inputs=model_name, outputs=custom_model_group)
-    custom_model_path.change(custom_model_changed, inputs=custom_model_path, outputs=None)
+    if is_colab:
+      custom_model_path.change(custom_model_changed, inputs=custom_model_path, outputs=None)
     # n_images.change(lambda n: gr.Gallery().style(grid=[2 if n > 1 else 1], height="auto"), inputs=n_images, outputs=gallery)
 
-    inputs = [model_name, prompt, guidance, steps, width, height, seed, image, strength, neg_prompt]
+    inputs = [model_name, prompt, guidance, steps, width, height, seed, image, strength, neg_prompt, inpaint_image]
     prompt.submit(inference, inputs=inputs, outputs=image_out)
     generate.click(inference, inputs=inputs, outputs=image_out)
 
