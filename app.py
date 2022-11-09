@@ -45,6 +45,7 @@ scheduler = DPMSolverMultistepScheduler(
     lower_order_final=True,
 )
 
+custom_model = None
 if is_colab:
   models.insert(0, Model("Custom model", "", ""))
   custom_model = models[0]
@@ -77,7 +78,7 @@ def custom_model_changed(path):
   global current_model
   current_model = models[0]
 
-def inference(model_name, prompt, guidance, steps, width=512, height=512, seed=0, img=None, strength=0.5, neg_prompt="", inpaint_image=None):
+def inference(model_name, prompt, guidance, steps, width=512, height=512, seed=0, img=None, strength=0.5, neg_prompt=""):
 
   global current_model
   for model in models:
@@ -90,9 +91,9 @@ def inference(model_name, prompt, guidance, steps, width=512, height=512, seed=0
   if img is not None:
     return img_to_img(model_path, prompt, neg_prompt, img, strength, guidance, steps, width, height, generator)
   else:
-    return txt_to_img(model_path, prompt, neg_prompt, guidance, steps, width, height, generator, inpaint_image)
+    return txt_to_img(model_path, prompt, neg_prompt, guidance, steps, width, height, generator)
 
-def txt_to_img(model_path, prompt, neg_prompt, guidance, steps, width, height, generator=None, inpaint_image=None):
+def txt_to_img(model_path, prompt, neg_prompt, guidance, steps, width, height, generator=None):
 
     global last_mode
     global pipe
@@ -110,18 +111,11 @@ def txt_to_img(model_path, prompt, neg_prompt, guidance, steps, width, height, g
           pipe = pipe.to("cuda")
         last_mode = "txt2img"
 
-    prompt = current_model.prefix + prompt
-
-    if inpaint_image is not None:
-      init_image = inpaint_image["image"].convert("RGB").resize((width, height))
-      mask = inpaint_image["mask"].convert("RGB").resize((width, height))
-  
+    prompt = current_model.prefix + prompt  
     result = pipe(
       prompt,
       negative_prompt = neg_prompt,
       # num_images_per_prompt=n_images,
-      image = init_image,
-      mask_image = mask,
       num_inference_steps = int(steps),
       guidance_scale = guidance,
       width = width,
@@ -182,7 +176,7 @@ with gr.Blocks(css=css) as demo:
               </div>
               <p>
                Demo for multiple fine-tuned Stable Diffusion models, trained on different styles: <br>
-               <a href="https://huggingface.co/nitrosocke/Arcane-Diffusion">Arcane</a>, <a href="https://huggingface.co/nitrosocke/archer-diffusion">Archer</a>, <a href="https://huggingface.co/nitrosocke/elden-ring-diffusion">Elden Ring</a>, <a href="https://huggingface.co/nitrosocke/spider-verse-diffusion">Spider-Verse</a>, <a href="https://huggingface.co/nitrosocke/modern-disney-diffusion">Modern Disney</a>, <a href="https://huggingface.co/nitrosocke/classic-anim-diffusion">Classic Disney</a>, <a href="https://huggingface.co/hakurei/waifu-diffusion">Waifu</a>, <a href="https://huggingface.co/lambdalabs/sd-pokemon-diffusers">Pokémon</a>, <a href="https://huggingface.co/AstraliteHeart/pony-diffusion">Pony Diffusion</a>, <a href="https://huggingface.co/nousr/robo-diffusion">Robo Diffusion</a>, <a href="https://huggingface.co/DGSpitzer/Cyberpunk-Anime-Diffusion">Cyberpunk Anime</a>, <a href="https://huggingface.co/dallinmackay/Tron-Legacy-diffusion">Tron Legacy</a> + any other custom Diffusers 🧨 SD model hosted on HuggingFace 🤗.
+               <a href="https://huggingface.co/nitrosocke/Arcane-Diffusion">Arcane</a>, <a href="https://huggingface.co/nitrosocke/archer-diffusion">Archer</a>, <a href="https://huggingface.co/nitrosocke/elden-ring-diffusion">Elden Ring</a>, <a href="https://huggingface.co/nitrosocke/spider-verse-diffusion">Spider-Verse</a>, <a href="https://huggingface.co/nitrosocke/mo-di-diffusion">Modern Disney</a>, <a href="https://huggingface.co/nitrosocke/classic-anim-diffusion">Classic Disney</a>, <a href="https://huggingface.co/dallinmackay/Van-Gogh-diffusion">Loving Vincent (Van Gogh)</a>, <a href="https://huggingface.co/nitrosocke/redshift-diffusion">Redshift renderer (Cinema4D)</a>, <a href="https://huggingface.co/prompthero/midjourney-v4-diffusion">Midjourney v4 style</a>, <a href="https://huggingface.co/hakurei/waifu-diffusion">Waifu</a>, <a href="https://huggingface.co/lambdalabs/sd-pokemon-diffusers">Pokémon</a>, <a href="https://huggingface.co/AstraliteHeart/pony-diffusion">Pony Diffusion</a>, <a href="https://huggingface.co/nousr/robo-diffusion">Robo Diffusion</a>, <a href="https://huggingface.co/DGSpitzer/Cyberpunk-Anime-Diffusion">Cyberpunk Anime</a>, <a href="https://huggingface.co/dallinmackay/Tron-Legacy-diffusion">Tron Legacy</a> + in colab notebook you can load any other Diffusers 🧨 SD model hosted on HuggingFace 🤗.
               </p>
               <p>You can skip the queue and load custom models in the colab: <a href="https://colab.research.google.com/gist/qunash/42112fb104509c24fd3aa6d1c11dd6e0/copy-of-fine-tuned-diffusion-gradio.ipynb"><img data-canonical-src="https://colab.research.google.com/assets/colab-badge.svg" alt="Open In Colab" src="https://camo.githubusercontent.com/84f0493939e0c4de4e6dbe113251b4bfb5353e57134ffd9fcab6b8714514d4d1/68747470733a2f2f636f6c61622e72657365617263682e676f6f676c652e636f6d2f6173736574732f636f6c61622d62616467652e737667"></a></p>
                Running on <b>{device}</b>{(" in a <b>Google Colab</b>." if is_colab else "")}
@@ -231,15 +225,12 @@ with gr.Blocks(css=css) as demo:
                 image = gr.Image(label="Image", height=256, tool="editor", type="pil")
                 strength = gr.Slider(label="Transformation strength", minimum=0, maximum=1, step=0.01, value=0.5)
 
-          with gr.Tab("Inpainting"):
-            inpaint_image = gr.Image(source='upload', tool='sketch', type="pil", label="Upload").style(height=256)
-
     model_name.change(lambda x: gr.update(visible = x == models[0].name), inputs=model_name, outputs=custom_model_group)
     if is_colab:
       custom_model_path.change(custom_model_changed, inputs=custom_model_path, outputs=None)
     # n_images.change(lambda n: gr.Gallery().style(grid=[2 if n > 1 else 1], height="auto"), inputs=n_images, outputs=gallery)
 
-    inputs = [model_name, prompt, guidance, steps, width, height, seed, image, strength, neg_prompt, inpaint_image]
+    inputs = [model_name, prompt, guidance, steps, width, height, seed, image, strength, neg_prompt]
     prompt.submit(inference, inputs=inputs, outputs=image_out)
     generate.click(inference, inputs=inputs, outputs=image_out)
 
@@ -251,12 +242,11 @@ with gr.Blocks(css=css) as demo:
         [models[5].name, "fantasy portrait painting, digital art", 4.0, 30],
     ], [model_name, prompt, guidance, steps, seed], image_out, inference, cache_examples=False)
 
-    gr.Markdown('''
-      Models by [@nitrosocke](https://huggingface.co/nitrosocke), [@haruu1367](https://twitter.com/haruu1367), [@Helixngc7293](https://twitter.com/DGSpitzer) and others. ❤️<br>
-      Space by: [![Twitter Follow](https://img.shields.io/twitter/follow/hahahahohohe?label=%40anzorq&style=social)](https://twitter.com/hahahahohohe)
-        
-      ![visitors](https://visitor-badge.glitch.me/badge?page_id=anzorq.finetuned_diffusion)
-    ''')
+    gr.HTML("""
+      <p>Models by <a href="https://huggingface.co/nitrosocke">@nitrosocke</a>, <a href="https://twitter.com/haruu1367">@haruu1367</a>, <a href="https://twitter.com/DGSpitzer">@Helixngc7293</a>, <a href="https://twitter.com/dal_mack">@dal_mack</a>, <a href="https://twitter.com/prompthero">@prompthero</a> and others. ❤️</p>
+<p>Space by: <a href="https://twitter.com/hahahahohohe"><img src="https://img.shields.io/twitter/follow/hahahahohohe?label=%40anzorq&style=social" alt="Twitter Follow"></a></p>
+<p><img src="https://visitor-badge.glitch.me/badge?page_id=anzorq.finetuned_diffusion" alt="visitors"></p>
+    """)
 
 if not is_colab:
   demo.queue(concurrency_count=1)
