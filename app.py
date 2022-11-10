@@ -25,9 +25,9 @@ models = [
      Model("Redshift renderer (Cinema4D)", "nitrosocke/redshift-diffusion", "redshift style "),
      Model("Midjourney v4 style", "prompthero/midjourney-v4-diffusion", "mdjrny-v4 style "),
      Model("Waifu", "hakurei/waifu-diffusion", ""),
-     Model("Pokémon", "lambdalabs/sd-pokemon-diffusers", ""),
-     Model("Pony Diffusion", "AstraliteHeart/pony-diffusion", ""),
-     Model("Robo Diffusion", "nousr/robo-diffusion", ""),
+     #Model("Pokémon", "lambdalabs/sd-pokemon-diffusers", ""),
+     #Model("Pony Diffusion", "AstraliteHeart/pony-diffusion", ""),
+     #Model("Robo Diffusion", "nousr/robo-diffusion", ""),
      Model("Cyberpunk Anime", "DGSpitzer/Cyberpunk-Anime-Diffusion", "dgs illustration style "),
      Model("Tron Legacy", "dallinmackay/Tron-Legacy-diffusion", "trnlgcy ")
   ]
