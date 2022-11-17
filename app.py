@@ -5,6 +5,7 @@ from PIL import Image
 import utils
 import datetime
 import time
+import psutil
 
 start_time = time.time()
 is_colab = utils.is_google_colab()
@@ -97,6 +98,8 @@ def on_model_change(model_name):
   return gr.update(visible = model_name == models[0].name), gr.update(placeholder=prefix)
 
 def inference(model_name, prompt, guidance, steps, width=512, height=512, seed=0, img=None, strength=0.5, neg_prompt=""):
+
+  psutil.virtual_memory() # print memory usage
 
   global current_model
   for model in models:
