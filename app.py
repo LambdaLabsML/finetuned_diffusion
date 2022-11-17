@@ -130,7 +130,7 @@ def txt_to_img(model_path, prompt, neg_prompt, guidance, steps, width, height, g
         if is_colab or current_model == custom_model:
           pipe = StableDiffusionPipeline.from_pretrained(current_model_path, torch_dtype=torch.float16, scheduler=scheduler, safety_checker=lambda images, clip_input: (images, False))
         else:
-          pipe.to("cpu")
+          pipe = pipe.to("cpu")
           pipe = current_model.pipe_t2i
 
         if torch.cuda.is_available():
@@ -163,7 +163,7 @@ def img_to_img(model_path, prompt, neg_prompt, img, strength, guidance, steps, w
         if is_colab or current_model == custom_model:
           pipe = StableDiffusionImg2ImgPipeline.from_pretrained(current_model_path, torch_dtype=torch.float16, scheduler=scheduler, safety_checker=lambda images, clip_input: (images, False))
         else:
-          pipe.to("cpu")
+          pipe = pipe.to("cpu")
           pipe = current_model.pipe_i2i
         
         if torch.cuda.is_available():
