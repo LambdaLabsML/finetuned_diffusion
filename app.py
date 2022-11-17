@@ -99,7 +99,7 @@ def on_model_change(model_name):
 
 def inference(model_name, prompt, guidance, steps, width=512, height=512, seed=0, img=None, strength=0.5, neg_prompt=""):
 
-  psutil.virtual_memory() # print memory usage
+  print(psutil.virtual_memory()) # print memory usage
 
   global current_model
   for model in models:
