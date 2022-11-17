@@ -3,11 +3,14 @@ import gradio as gr
 import torch
 from PIL import Image
 import utils
+import datetime
+import time
 
+start_time = time.time()
 is_colab = utils.is_google_colab()
 
 class Model:
-    def __init__(self, name, path, prefix):
+    def __init__(self, name, path="", prefix=""):
         self.name = name
         self.path = path
         self.prefix = prefix
@@ -17,17 +20,18 @@ class Model:
 models = [
      Model("Arcane", "nitrosocke/Arcane-Diffusion", "arcane style "),
      Model("Archer", "nitrosocke/archer-diffusion", "archer style "),
-     Model("Elden Ring", "nitrosocke/elden-ring-diffusion", "elden ring style "),
-     Model("Spider-Verse", "nitrosocke/spider-verse-diffusion", "spiderverse style "),
      Model("Modern Disney", "nitrosocke/mo-di-diffusion", "modern disney style "),
      Model("Classic Disney", "nitrosocke/classic-anim-diffusion", "classic disney style "),
      Model("Loving Vincent (Van Gogh)", "dallinmackay/Van-Gogh-diffusion", "lvngvncnt "),
      Model("Redshift renderer (Cinema4D)", "nitrosocke/redshift-diffusion", "redshift style "),
      Model("Midjourney v4 style", "prompthero/midjourney-v4-diffusion", "mdjrny-v4 style "),
-     Model("Waifu", "hakurei/waifu-diffusion", ""),
+     Model("Waifu", "hakurei/waifu-diffusion"),
      Model("Cyberpunk Anime", "DGSpitzer/Cyberpunk-Anime-Diffusion", "dgs illustration style "),
-     Model("Balloon Art", "Fictiverse/Stable_Diffusion_BalloonArt_Model", "BalloonArt "),
+     Model("TrinArt v2", "naclbit/trinart_stable_diffusion_v2")
   ]
+    #  Model("Spider-Verse", "nitrosocke/spider-verse-diffusion", "spiderverse style "),
+    #  Model("Balloon Art", "Fictiverse/Stable_Diffusion_BalloonArt_Model", "BalloonArt "),
+    #  Model("Elden Ring", "nitrosocke/elden-ring-diffusion", "elden ring style "),
     #  Model("Tron Legacy", "dallinmackay/Tron-Legacy-diffusion", "trnlgcy ")
      #Model("Pokémon", "lambdalabs/sd-pokemon-diffusers", ""),
      #Model("Pony Diffusion", "AstraliteHeart/pony-diffusion", ""),
@@ -48,7 +52,7 @@ scheduler = DPMSolverMultistepScheduler(
 
 custom_model = None
 if is_colab:
-  models.insert(0, Model("Custom model", "", ""))
+  models.insert(0, Model("Custom model"))
   custom_model = models[0]
 
 last_mode = "txt2img"
@@ -59,15 +63,16 @@ if is_colab:
   pipe = StableDiffusionPipeline.from_pretrained(current_model.path, torch_dtype=torch.float16, scheduler=scheduler, safety_checker=lambda images, clip_input: (images, False))
 
 else: # download all models
+  print(f"{datetime.datetime.now()} Downloading vae...")
   vae = AutoencoderKL.from_pretrained(current_model.path, subfolder="vae", torch_dtype=torch.float16)
   for model in models:
     try:
-        print(f"Downloading {model.name} model...")
+        print(f"{datetime.datetime.now()} Downloading {model.name}...")
         unet = UNet2DConditionModel.from_pretrained(model.path, subfolder="unet", torch_dtype=torch.float16)
         model.pipe_t2i = StableDiffusionPipeline.from_pretrained(model.path, unet=unet, vae=vae, torch_dtype=torch.float16, scheduler=scheduler)
         model.pipe_i2i = StableDiffusionImg2ImgPipeline.from_pretrained(model.path, unet=unet, vae=vae, torch_dtype=torch.float16, scheduler=scheduler)
     except Exception as e:
-        print("Failed to load model " + model.name + ": " + str(e))
+        print(f"{datetime.datetime.now()} Failed to load model " + model.name + ": " + str(e))
         models.remove(model)
   pipe = models[0].pipe_t2i
   
@@ -269,3 +274,5 @@ with gr.Blocks(css=css) as demo:
 if not is_colab:
   demo.queue(concurrency_count=1)
 demo.launch(debug=is_colab, share=is_colab)
+
+print(f"Space built in {time.time() - start_time:.2f} seconds")
