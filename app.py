@@ -81,6 +81,10 @@ if torch.cuda.is_available():
 
 device = "GPU 🔥" if torch.cuda.is_available() else "CPU 🥶"
 
+def error_str(error, title="Error"):
+    return f"""#### {title}
+            {error}"""  if error else ""
+
 def custom_model_changed(path):
   models[0].path = path
   global current_model
@@ -102,10 +106,13 @@ def inference(model_name, prompt, guidance, steps, width=512, height=512, seed=0
 
   generator = torch.Generator('cuda').manual_seed(seed) if seed != 0 else None
 
-  if img is not None:
-    return img_to_img(model_path, prompt, neg_prompt, img, strength, guidance, steps, width, height, generator)
-  else:
-    return txt_to_img(model_path, prompt, neg_prompt, guidance, steps, width, height, generator)
+  try:
+    if img is not None:
+      return img_to_img(model_path, prompt, neg_prompt, img, strength, guidance, steps, width, height, generator), None
+    else:
+      return txt_to_img(model_path, prompt, neg_prompt, guidance, steps, width, height, generator), None
+  except Exception as e:
+    return None, error_str(e)
 
 def txt_to_img(model_path, prompt, neg_prompt, guidance, steps, width, height, generator):
 
@@ -224,6 +231,7 @@ with gr.Blocks(css=css) as demo:
               # gallery = gr.Gallery(
               #     label="Generated images", show_label=False, elem_id="gallery"
               # ).style(grid=[1], height="auto")
+          error_output = gr.Markdown()
 
         with gr.Column(scale=45):
           with gr.Tab("Options"):
@@ -253,8 +261,9 @@ with gr.Blocks(css=css) as demo:
     # n_images.change(lambda n: gr.Gallery().style(grid=[2 if n > 1 else 1], height="auto"), inputs=n_images, outputs=gallery)
 
     inputs = [model_name, prompt, guidance, steps, width, height, seed, image, strength, neg_prompt]
-    prompt.submit(inference, inputs=inputs, outputs=image_out)
-    generate.click(inference, inputs=inputs, outputs=image_out)
+    outputs = [image_out, error_output]
+    prompt.submit(inference, inputs=inputs, outputs=outputs)
+    generate.click(inference, inputs=inputs, outputs=outputs)
 
     ex = gr.Examples([
         [models[7].name, "tiny cute and adorable kitten adventurer dressed in a warm overcoat with survival gear on a winters day", 7.5, 50],
@@ -262,7 +271,7 @@ with gr.Blocks(css=css) as demo:
         [models[5].name, "portrait of a beautiful alyx vance half life", 10, 50],
         [models[6].name, "Aloy from Horizon: Zero Dawn, half body portrait, smooth, detailed armor, beautiful face, illustration", 7.0, 45],
         [models[5].name, "fantasy portrait painting, digital art", 4.0, 30],
-    ], [model_name, prompt, guidance, steps, seed], image_out, inference, cache_examples=False)
+    ], inputs=[model_name, prompt, guidance, steps, seed], outputs=outputs, fn=inference, cache_examples=False)
 
     gr.HTML("""
     <div style="border-top: 1px solid #303030;">
@@ -280,4 +289,3 @@ print(f"Space built in {time.time() - start_time:.2f} seconds")
 if not is_colab:
   demo.queue(concurrency_count=1)
 demo.launch(debug=is_colab, share=is_colab)
-
