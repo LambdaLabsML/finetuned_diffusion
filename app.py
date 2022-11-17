@@ -62,10 +62,12 @@ else: # download all models
   vae = AutoencoderKL.from_pretrained(current_model.path, subfolder="vae", torch_dtype=torch.float16)
   for model in models:
     try:
+        print(f"Downloading {model.name} model...")
         unet = UNet2DConditionModel.from_pretrained(model.path, subfolder="unet", torch_dtype=torch.float16)
         model.pipe_t2i = StableDiffusionPipeline.from_pretrained(model.path, unet=unet, vae=vae, torch_dtype=torch.float16, scheduler=scheduler)
         model.pipe_i2i = StableDiffusionImg2ImgPipeline.from_pretrained(model.path, unet=unet, vae=vae, torch_dtype=torch.float16, scheduler=scheduler)
-    except:
+    except Exception as e:
+        print("Failed to load model " + model.name + ": " + str(e))
         models.remove(model)
   pipe = models[0].pipe_t2i
   
