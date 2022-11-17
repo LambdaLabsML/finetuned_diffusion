@@ -67,7 +67,7 @@ else: # download all models
   vae = AutoencoderKL.from_pretrained(current_model.path, subfolder="vae", torch_dtype=torch.float16)
   for model in models:
     try:
-        print(f"{datetime.datetime.now()} Downloading {model.name}...")
+        print(f"{datetime.datetime.now()} Downloading {model.name} model...")
         unet = UNet2DConditionModel.from_pretrained(model.path, subfolder="unet", torch_dtype=torch.float16)
         model.pipe_t2i = StableDiffusionPipeline.from_pretrained(model.path, unet=unet, vae=vae, torch_dtype=torch.float16, scheduler=scheduler)
         model.pipe_i2i = StableDiffusionImg2ImgPipeline.from_pretrained(model.path, unet=unet, vae=vae, torch_dtype=torch.float16, scheduler=scheduler)
@@ -107,7 +107,9 @@ def inference(model_name, prompt, guidance, steps, width=512, height=512, seed=0
   else:
     return txt_to_img(model_path, prompt, neg_prompt, guidance, steps, width, height, generator)
 
-def txt_to_img(model_path, prompt, neg_prompt, guidance, steps, width, height, generator=None):
+def txt_to_img(model_path, prompt, neg_prompt, guidance, steps, width, height, generator):
+
+    print(f"{datetime.datetime.now()} txt_to_img, model: {current_model.name}")
 
     global last_mode
     global pipe
@@ -138,7 +140,9 @@ def txt_to_img(model_path, prompt, neg_prompt, guidance, steps, width, height, g
     
     return replace_nsfw_images(result)
 
-def img_to_img(model_path, prompt, neg_prompt, img, strength, guidance, steps, width, height, generator=None):
+def img_to_img(model_path, prompt, neg_prompt, img, strength, guidance, steps, width, height, generator):
+
+    print(f"{datetime.datetime.now()} img_to_img, model: {model_path}")
 
     global last_mode
     global pipe
@@ -253,7 +257,7 @@ with gr.Blocks(css=css) as demo:
     generate.click(inference, inputs=inputs, outputs=image_out)
 
     ex = gr.Examples([
-        [models[1].name, "jason bateman disassembling the demon core", 7.5, 50],
+        [models[7].name, "tiny cute and adorable kitten adventurer dressed in a warm overcoat with survival gear on a winters day", 7.5, 50],
         [models[4].name, "portrait of dwayne johnson", 7.0, 75],
         [models[5].name, "portrait of a beautiful alyx vance half life", 10, 50],
         [models[6].name, "Aloy from Horizon: Zero Dawn, half body portrait, smooth, detailed armor, beautiful face, illustration", 7.0, 45],
@@ -271,8 +275,9 @@ with gr.Blocks(css=css) as demo:
     </div>
     """)
 
+print(f"Space built in {time.time() - start_time:.2f} seconds")
+
 if not is_colab:
   demo.queue(concurrency_count=1)
 demo.launch(debug=is_colab, share=is_colab)
 
-print(f"Space built in {time.time() - start_time:.2f} seconds")
