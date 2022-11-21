@@ -64,18 +64,19 @@ if is_colab:
   pipe = StableDiffusionPipeline.from_pretrained(current_model.path, torch_dtype=torch.float16, scheduler=scheduler, safety_checker=lambda images, clip_input: (images, False))
 
 else: # download all models
-  print(f"{datetime.datetime.now()} Downloading vae...")
-  vae = AutoencoderKL.from_pretrained(current_model.path, subfolder="vae", torch_dtype=torch.float16)
-  for model in models:
-    try:
-        print(f"{datetime.datetime.now()} Downloading {model.name} model...")
-        unet = UNet2DConditionModel.from_pretrained(model.path, subfolder="unet", torch_dtype=torch.float16)
-        model.pipe_t2i = StableDiffusionPipeline.from_pretrained(model.path, unet=unet, vae=vae, torch_dtype=torch.float16, scheduler=scheduler)
-        model.pipe_i2i = StableDiffusionImg2ImgPipeline.from_pretrained(model.path, unet=unet, vae=vae, torch_dtype=torch.float16, scheduler=scheduler)
-    except Exception as e:
-        print(f"{datetime.datetime.now()} Failed to load model " + model.name + ": " + str(e))
-        models.remove(model)
-  pipe = models[0].pipe_t2i
+  pipe = StableDiffusionPipeline.from_pretrained(current_model.path, torch_dtype=torch.float16, scheduler=scheduler, safety_checker=lambda images, clip_input: (images, False))
+  # print(f"{datetime.datetime.now()} Downloading vae...")
+  # vae = AutoencoderKL.from_pretrained(current_model.path, subfolder="vae", torch_dtype=torch.float16)
+  # for model in models:
+  #   try:
+  #       print(f"{datetime.datetime.now()} Downloading {model.name} model...")
+  #       unet = UNet2DConditionModel.from_pretrained(model.path, subfolder="unet", torch_dtype=torch.float16)
+  #       model.pipe_t2i = StableDiffusionPipeline.from_pretrained(model.path, unet=unet, vae=vae, torch_dtype=torch.float16, scheduler=scheduler)
+  #       model.pipe_i2i = StableDiffusionImg2ImgPipeline.from_pretrained(model.path, unet=unet, vae=vae, torch_dtype=torch.float16, scheduler=scheduler)
+  #   except Exception as e:
+  #       print(f"{datetime.datetime.now()} Failed to load model " + model.name + ": " + str(e))
+  #       models.remove(model)
+  # pipe = models[0].pipe_t2i
   
 if torch.cuda.is_available():
   pipe = pipe.to("cuda")
@@ -130,8 +131,9 @@ def txt_to_img(model_path, prompt, neg_prompt, guidance, steps, width, height, g
         if is_colab or current_model == custom_model:
           pipe = StableDiffusionPipeline.from_pretrained(current_model_path, torch_dtype=torch.float16, scheduler=scheduler, safety_checker=lambda images, clip_input: (images, False))
         else:
-          pipe = pipe.to("cpu")
-          pipe = current_model.pipe_t2i
+          pipe = StableDiffusionPipeline.from_pretrained(current_model_path, torch_dtype=torch.float16, scheduler=scheduler, safety_checker=lambda images, clip_input: (images, False))
+          # pipe = pipe.to("cpu")
+          # pipe = current_model.pipe_t2i
 
         if torch.cuda.is_available():
           pipe = pipe.to("cuda")
@@ -163,8 +165,9 @@ def img_to_img(model_path, prompt, neg_prompt, img, strength, guidance, steps, w
         if is_colab or current_model == custom_model:
           pipe = StableDiffusionImg2ImgPipeline.from_pretrained(current_model_path, torch_dtype=torch.float16, scheduler=scheduler, safety_checker=lambda images, clip_input: (images, False))
         else:
-          pipe = pipe.to("cpu")
-          pipe = current_model.pipe_i2i
+          pipe = StableDiffusionImg2ImgPipeline.from_pretrained(current_model_path, torch_dtype=torch.float16, scheduler=scheduler, safety_checker=lambda images, clip_input: (images, False))
+          # pipe = pipe.to("cpu")
+          # pipe = current_model.pipe_i2i
         
         if torch.cuda.is_available():
           pipe = pipe.to("cuda")
