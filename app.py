@@ -64,7 +64,7 @@ if is_colab:
   pipe = StableDiffusionPipeline.from_pretrained(current_model.path, torch_dtype=torch.float16, scheduler=scheduler, safety_checker=lambda images, clip_input: (images, False))
 
 else: # download all models
-  pipe = StableDiffusionPipeline.from_pretrained(current_model.path, torch_dtype=torch.float16, scheduler=scheduler, safety_checker=lambda images, clip_input: (images, False))
+  pipe = StableDiffusionPipeline.from_pretrained(current_model.path, torch_dtype=torch.float16, scheduler=scheduler)
   # print(f"{datetime.datetime.now()} Downloading vae...")
   # vae = AutoencoderKL.from_pretrained(current_model.path, subfolder="vae", torch_dtype=torch.float16)
   # for model in models:
