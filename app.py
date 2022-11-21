@@ -32,7 +32,7 @@ models = [
      Model("TrinArt v2", "naclbit/trinart_stable_diffusion_v2"),
      Model("Spider-Verse", "nitrosocke/spider-verse-diffusion", "spiderverse style "),
      Model("Balloon Art", "Fictiverse/Stable_Diffusion_BalloonArt_Model", "BalloonArt "),
-     Model("Tron Legacy", "dallinmackay/Tron-Legacy-diffusion", "trnlgcy ")
+     Model("Tron Legacy", "dallinmackay/Tron-Legacy-diffusion", "trnlgcy "),
      Model("Pokémon", "lambdalabs/sd-pokemon-diffusers"),
      Model("Pony Diffusion", "AstraliteHeart/pony-diffusion"),
      Model("Robo Diffusion", "nousr/robo-diffusion"),
