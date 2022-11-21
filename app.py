@@ -28,15 +28,15 @@ models = [
      Model("Midjourney v4 style", "prompthero/midjourney-v4-diffusion", "mdjrny-v4 style "),
      Model("Waifu", "hakurei/waifu-diffusion"),
      Model("Cyberpunk Anime", "DGSpitzer/Cyberpunk-Anime-Diffusion", "dgs illustration style "),
-     Model("TrinArt v2", "naclbit/trinart_stable_diffusion_v2")
+     Model("Elden Ring", "nitrosocke/elden-ring-diffusion", "elden ring style "),
+     Model("TrinArt v2", "naclbit/trinart_stable_diffusion_v2"),
+     Model("Spider-Verse", "nitrosocke/spider-verse-diffusion", "spiderverse style "),
+     Model("Balloon Art", "Fictiverse/Stable_Diffusion_BalloonArt_Model", "BalloonArt "),
+     Model("Tron Legacy", "dallinmackay/Tron-Legacy-diffusion", "trnlgcy ")
+     Model("Pokémon", "lambdalabs/sd-pokemon-diffusers"),
+     Model("Pony Diffusion", "AstraliteHeart/pony-diffusion"),
+     Model("Robo Diffusion", "nousr/robo-diffusion"),
   ]
-    #  Model("Spider-Verse", "nitrosocke/spider-verse-diffusion", "spiderverse style "),
-    #  Model("Balloon Art", "Fictiverse/Stable_Diffusion_BalloonArt_Model", "BalloonArt "),
-    #  Model("Elden Ring", "nitrosocke/elden-ring-diffusion", "elden ring style "),
-    #  Model("Tron Legacy", "dallinmackay/Tron-Legacy-diffusion", "trnlgcy ")
-     #Model("Pokémon", "lambdalabs/sd-pokemon-diffusers", ""),
-     #Model("Pony Diffusion", "AstraliteHeart/pony-diffusion", ""),
-     #Model("Robo Diffusion", "nousr/robo-diffusion", ""),
      
 scheduler = DPMSolverMultistepScheduler(
     beta_start=0.00085,
