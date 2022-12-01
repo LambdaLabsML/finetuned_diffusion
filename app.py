@@ -37,19 +37,6 @@ models = [
      Model("Pony Diffusion", "AstraliteHeart/pony-diffusion"),
      Model("Robo Diffusion", "nousr/robo-diffusion"),
   ]
-     
-scheduler = DPMSolverMultistepScheduler(
-    beta_start=0.00085,
-    beta_end=0.012,
-    beta_schedule="scaled_linear",
-    num_train_timesteps=1000,
-    trained_betas=None,
-    predict_epsilon=True,
-    thresholding=False,
-    algorithm_type="dpmsolver++",
-    solver_type="midpoint",
-    lower_order_final=True,
-)
 
 custom_model = None
 if is_colab:
@@ -61,23 +48,20 @@ current_model = models[1] if is_colab else models[0]
 current_model_path = current_model.path
 
 if is_colab:
-  pipe = StableDiffusionPipeline.from_pretrained(current_model.path, torch_dtype=torch.float16, scheduler=scheduler, safety_checker=lambda images, clip_input: (images, False))
+  pipe = StableDiffusionPipeline.from_pretrained(
+      current_model.path,
+      torch_dtype=torch.float16,
+      scheduler=DPMSolverMultistepScheduler.from_pretrained(current_model.path, subfolder="scheduler"),
+      safety_checker=lambda images, clip_input: (images, False)
+      )
 
-else: # download all models
-  pipe = StableDiffusionPipeline.from_pretrained(current_model.path, torch_dtype=torch.float16, scheduler=scheduler)
-  # print(f"{datetime.datetime.now()} Downloading vae...")
-  # vae = AutoencoderKL.from_pretrained(current_model.path, subfolder="vae", torch_dtype=torch.float16)
-  # for model in models:
-  #   try:
-  #       print(f"{datetime.datetime.now()} Downloading {model.name} model...")
-  #       unet = UNet2DConditionModel.from_pretrained(model.path, subfolder="unet", torch_dtype=torch.float16)
-  #       model.pipe_t2i = StableDiffusionPipeline.from_pretrained(model.path, unet=unet, vae=vae, torch_dtype=torch.float16, scheduler=scheduler)
-  #       model.pipe_i2i = StableDiffusionImg2ImgPipeline.from_pretrained(model.path, unet=unet, vae=vae, torch_dtype=torch.float16, scheduler=scheduler)
-  #   except Exception as e:
-  #       print(f"{datetime.datetime.now()} Failed to load model " + model.name + ": " + str(e))
-  #       models.remove(model)
-  # pipe = models[0].pipe_t2i
-  
+else:
+  pipe = StableDiffusionPipeline.from_pretrained(
+      current_model.path,
+      torch_dtype=torch.float16,
+      scheduler=DPMSolverMultistepScheduler.from_pretrained(current_model.path, subfolder="scheduler")
+      )
+    
 if torch.cuda.is_available():
   pipe = pipe.to("cuda")
 
@@ -98,7 +82,7 @@ def on_model_change(model_name):
 
   return gr.update(visible = model_name == models[0].name), gr.update(placeholder=prefix)
 
-def inference(model_name, prompt, guidance, steps, width=512, height=512, seed=0, img=None, strength=0.5, neg_prompt=""):
+def inference(model_name, prompt, guidance, steps, n_images=1, width=512, height=512, seed=0, img=None, strength=0.5, neg_prompt=""):
 
   print(psutil.virtual_memory()) # print memory usage
 
@@ -112,13 +96,13 @@ def inference(model_name, prompt, guidance, steps, width=512, height=512, seed=0
 
   try:
     if img is not None:
-      return img_to_img(model_path, prompt, neg_prompt, img, strength, guidance, steps, width, height, generator), None
+      return img_to_img(model_path, prompt, n_images, neg_prompt, img, strength, guidance, steps, width, height, generator), None
     else:
-      return txt_to_img(model_path, prompt, neg_prompt, guidance, steps, width, height, generator), None
+      return txt_to_img(model_path, prompt, n_images, neg_prompt, guidance, steps, width, height, generator), None
   except Exception as e:
     return None, error_str(e)
 
-def txt_to_img(model_path, prompt, neg_prompt, guidance, steps, width, height, generator):
+def txt_to_img(model_path, prompt, n_images, neg_prompt, guidance, steps, width, height, generator):
 
     print(f"{datetime.datetime.now()} txt_to_img, model: {current_model.name}")
 
@@ -129,9 +113,18 @@ def txt_to_img(model_path, prompt, neg_prompt, guidance, steps, width, height, g
         current_model_path = model_path
 
         if is_colab or current_model == custom_model:
-          pipe = StableDiffusionPipeline.from_pretrained(current_model_path, torch_dtype=torch.float16, scheduler=scheduler, safety_checker=lambda images, clip_input: (images, False))
+          pipe = StableDiffusionPipeline.from_pretrained(
+              current_model_path,
+              torch_dtype=torch.float16,
+              scheduler=DPMSolverMultistepScheduler.from_pretrained(current_model.path, subfolder="scheduler"),
+              safety_checker=lambda images, clip_input: (images, False)
+              )
         else:
-          pipe = StableDiffusionPipeline.from_pretrained(current_model_path, torch_dtype=torch.float16, scheduler=scheduler)
+          pipe = StableDiffusionPipeline.from_pretrained(
+              current_model_path,
+              torch_dtype=torch.float16,
+              scheduler=DPMSolverMultistepScheduler.from_pretrained(current_model.path, subfolder="scheduler")
+              )
           # pipe = pipe.to("cpu")
           # pipe = current_model.pipe_t2i
 
@@ -143,7 +136,7 @@ def txt_to_img(model_path, prompt, neg_prompt, guidance, steps, width, height, g
     result = pipe(
       prompt,
       negative_prompt = neg_prompt,
-      # num_images_per_prompt=n_images,
+      num_images_per_prompt=n_images,
       num_inference_steps = int(steps),
       guidance_scale = guidance,
       width = width,
@@ -152,7 +145,7 @@ def txt_to_img(model_path, prompt, neg_prompt, guidance, steps, width, height, g
     
     return replace_nsfw_images(result)
 
-def img_to_img(model_path, prompt, neg_prompt, img, strength, guidance, steps, width, height, generator):
+def img_to_img(model_path, prompt, n_images, neg_prompt, img, strength, guidance, steps, width, height, generator):
 
     print(f"{datetime.datetime.now()} img_to_img, model: {model_path}")
 
@@ -163,9 +156,18 @@ def img_to_img(model_path, prompt, neg_prompt, img, strength, guidance, steps, w
         current_model_path = model_path
 
         if is_colab or current_model == custom_model:
-          pipe = StableDiffusionImg2ImgPipeline.from_pretrained(current_model_path, torch_dtype=torch.float16, scheduler=scheduler, safety_checker=lambda images, clip_input: (images, False))
+          pipe = StableDiffusionImg2ImgPipeline.from_pretrained(
+              current_model_path,
+              torch_dtype=torch.float16,
+              scheduler=DPMSolverMultistepScheduler.from_pretrained(current_model.path, subfolder="scheduler"),
+              safety_checker=lambda images, clip_input: (images, False)
+              )
         else:
-          pipe = StableDiffusionImg2ImgPipeline.from_pretrained(current_model_path, torch_dtype=torch.float16, scheduler=scheduler)
+          pipe = StableDiffusionImg2ImgPipeline.from_pretrained(
+              current_model_path,
+              torch_dtype=torch.float16,
+              scheduler=DPMSolverMultistepScheduler.from_pretrained(current_model.path, subfolder="scheduler")
+              )
           # pipe = pipe.to("cpu")
           # pipe = current_model.pipe_i2i
         
@@ -179,7 +181,7 @@ def img_to_img(model_path, prompt, neg_prompt, img, strength, guidance, steps, w
     result = pipe(
         prompt,
         negative_prompt = neg_prompt,
-        # num_images_per_prompt=n_images,
+        num_images_per_prompt=n_images,
         init_image = img,
         num_inference_steps = int(steps),
         strength = strength,
@@ -193,12 +195,12 @@ def img_to_img(model_path, prompt, neg_prompt, img, strength, guidance, steps, w
 def replace_nsfw_images(results):
 
     if is_colab:
-      return results.images[0]
+      return results.images
       
     for i in range(len(results.images)):
       if results.nsfw_content_detected[i]:
         results.images[i] = Image.open("nsfw.png")
-    return results.images[0]
+    return results.images
 
 css = """.finetuned-diffusion-div div{display:inline-flex;align-items:center;gap:.8rem;font-size:1.75rem}.finetuned-diffusion-div div h1{font-weight:900;margin-bottom:7px}.finetuned-diffusion-div p{margin-bottom:10px;font-size:94%}a{text-decoration:underline}.tabs{margin-top:0;margin-bottom:0}#gallery{min-height:20rem}
 """
@@ -216,7 +218,8 @@ with gr.Blocks(css=css) as demo:
               <p>You can skip the queue and load custom models in the colab: <a href="https://colab.research.google.com/gist/qunash/42112fb104509c24fd3aa6d1c11dd6e0/copy-of-fine-tuned-diffusion-gradio.ipynb"><img data-canonical-src="https://colab.research.google.com/assets/colab-badge.svg" alt="Open In Colab" src="https://camo.githubusercontent.com/84f0493939e0c4de4e6dbe113251b4bfb5353e57134ffd9fcab6b8714514d4d1/68747470733a2f2f636f6c61622e72657365617263682e676f6f676c652e636f6d2f6173736574732f636f6c61622d62616467652e737667"></a></p>
                Running on <b>{device}</b>{(" in a <b>Google Colab</b>." if is_colab else "")}
               </p>
-              <p>You can also duplicate this space and upgrade to gpu by going to settings: <a style="display:inline-block" href="https://huggingface.co/spaces/anzorq/finetuned_diffusion?duplicate=true"><img src="https://img.shields.io/badge/-Duplicate%20Space-blue?labelColor=white&style=flat&logo=data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAAAXNSR0IArs4c6QAAAP5JREFUOE+lk7FqAkEURY+ltunEgFXS2sZGIbXfEPdLlnxJyDdYB62sbbUKpLbVNhyYFzbrrA74YJlh9r079973psed0cvUD4A+4HoCjsA85X0Dfn/RBLBgBDxnQPfAEJgBY+A9gALA4tcbamSzS4xq4FOQAJgCDwV2CPKV8tZAJcAjMMkUe1vX+U+SMhfAJEHasQIWmXNN3abzDwHUrgcRGmYcgKe0bxrblHEB4E/pndMazNpSZGcsZdBlYJcEL9Afo75molJyM2FxmPgmgPqlWNLGfwZGG6UiyEvLzHYDmoPkDDiNm9JR9uboiONcBXrpY1qmgs21x1QwyZcpvxt9NS09PlsPAAAAAElFTkSuQmCC&logoWidth=14" alt="Duplicate Space"></a></p>
+              <p>You can also duplicate this space and upgrade to gpu by going to settings:<br>
+              <a style="display:inline-block" href="https://huggingface.co/spaces/anzorq/finetuned_diffusion?duplicate=true"><img src="https://img.shields.io/badge/-Duplicate%20Space-blue?labelColor=white&style=flat&logo=data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAAAXNSR0IArs4c6QAAAP5JREFUOE+lk7FqAkEURY+ltunEgFXS2sZGIbXfEPdLlnxJyDdYB62sbbUKpLbVNhyYFzbrrA74YJlh9r079973psed0cvUD4A+4HoCjsA85X0Dfn/RBLBgBDxnQPfAEJgBY+A9gALA4tcbamSzS4xq4FOQAJgCDwV2CPKV8tZAJcAjMMkUe1vX+U+SMhfAJEHasQIWmXNN3abzDwHUrgcRGmYcgKe0bxrblHEB4E/pndMazNpSZGcsZdBlYJcEL9Afo75molJyM2FxmPgmgPqlWNLGfwZGG6UiyEvLzHYDmoPkDDiNm9JR9uboiONcBXrpY1qmgs21x1QwyZcpvxt9NS09PlsPAAAAAElFTkSuQmCC&logoWidth=14" alt="Duplicate Space"></a></p>
             </div>
         """
     )
@@ -234,10 +237,9 @@ with gr.Blocks(css=css) as demo:
                 generate = gr.Button(value="Generate").style(rounded=(False, True, True, False))
 
 
-              image_out = gr.Image(height=512)
-              # gallery = gr.Gallery(
-              #     label="Generated images", show_label=False, elem_id="gallery"
-              # ).style(grid=[1], height="auto")
+              # image_out = gr.Image(height=512)
+              gallery = gr.Gallery(label="Generated images", show_label=False, elem_id="gallery").style(grid=[2], height="auto")
+
           error_output = gr.Markdown()
 
         with gr.Column(scale=45):
@@ -245,7 +247,7 @@ with gr.Blocks(css=css) as demo:
             with gr.Group():
               neg_prompt = gr.Textbox(label="Negative prompt", placeholder="What to exclude from the image")
 
-              # n_images = gr.Slider(label="Images", value=1, minimum=1, maximum=4, step=1)
+              n_images = gr.Slider(label="Images", value=1, minimum=1, maximum=4, step=1)
 
               with gr.Row():
                 guidance = gr.Slider(label="Guidance scale", value=7.5, maximum=15)
@@ -267,18 +269,18 @@ with gr.Blocks(css=css) as demo:
       custom_model_path.change(custom_model_changed, inputs=custom_model_path, outputs=None)
     # n_images.change(lambda n: gr.Gallery().style(grid=[2 if n > 1 else 1], height="auto"), inputs=n_images, outputs=gallery)
 
-    inputs = [model_name, prompt, guidance, steps, width, height, seed, image, strength, neg_prompt]
-    outputs = [image_out, error_output]
+    inputs = [model_name, prompt, guidance, steps, n_images, width, height, seed, image, strength, neg_prompt]
+    outputs = [gallery, error_output]
     prompt.submit(inference, inputs=inputs, outputs=outputs)
     generate.click(inference, inputs=inputs, outputs=outputs)
 
     ex = gr.Examples([
-        [models[7].name, "tiny cute and adorable kitten adventurer dressed in a warm overcoat with survival gear on a winters day", 7.5, 50],
-        [models[4].name, "portrait of dwayne johnson", 7.0, 75],
-        [models[5].name, "portrait of a beautiful alyx vance half life", 10, 50],
-        [models[6].name, "Aloy from Horizon: Zero Dawn, half body portrait, smooth, detailed armor, beautiful face, illustration", 7.0, 45],
-        [models[5].name, "fantasy portrait painting, digital art", 4.0, 30],
-    ], inputs=[model_name, prompt, guidance, steps, seed], outputs=outputs, fn=inference, cache_examples=False)
+        [models[7].name, "tiny cute and adorable kitten adventurer dressed in a warm overcoat with survival gear on a winters day", 7.5, 25],
+        [models[4].name, "portrait of dwayne johnson", 7.0, 35],
+        [models[5].name, "portrait of a beautiful alyx vance half life", 10, 25],
+        [models[6].name, "Aloy from Horizon: Zero Dawn, half body portrait, smooth, detailed armor, beautiful face, illustration", 7.0, 30],
+        [models[5].name, "fantasy portrait painting, digital art", 4.0, 20],
+    ], inputs=[model_name, prompt, guidance, steps], outputs=outputs, fn=inference, cache_examples=False)
 
     gr.HTML("""
     <div style="border-top: 1px solid #303030;">
