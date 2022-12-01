@@ -186,8 +186,8 @@ def img_to_img(model_path, prompt, n_images, neg_prompt, img, strength, guidance
         num_inference_steps = int(steps),
         strength = strength,
         guidance_scale = guidance,
-        width = width,
-        height = height,
+        # width = width,
+        # height = height,
         generator = generator)
         
     return replace_nsfw_images(result)
