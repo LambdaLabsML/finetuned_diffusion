@@ -182,7 +182,7 @@ def img_to_img(model_path, prompt, n_images, neg_prompt, img, strength, guidance
         prompt,
         negative_prompt = neg_prompt,
         num_images_per_prompt=n_images,
-        image = img,
+        init_image = img,
         num_inference_steps = int(steps),
         strength = strength,
         guidance_scale = guidance,
