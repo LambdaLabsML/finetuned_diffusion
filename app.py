@@ -20,6 +20,7 @@ class Model:
 
 models = [
      Model("Arcane", "nitrosocke/Arcane-Diffusion", "arcane style "),
+     Model("Dreamlike Diffusion 1.0", "dreamlike-art/dreamlike-diffusion-1.0", "dreamlikeart "),
      Model("Archer", "nitrosocke/archer-diffusion", "archer style "),
      Model("Modern Disney", "nitrosocke/mo-di-diffusion", "modern disney style "),
      Model("Classic Disney", "nitrosocke/classic-anim-diffusion", "classic disney style "),
@@ -66,6 +67,7 @@ else:
     
 if torch.cuda.is_available():
   pipe = pipe.to("cuda")
+  pipe.enable_xformers_memory_efficient_attention()
 
 device = "GPU 🔥" if torch.cuda.is_available() else "CPU 🥶"
 
@@ -132,6 +134,7 @@ def txt_to_img(model_path, prompt, n_images, neg_prompt, guidance, steps, width,
 
         if torch.cuda.is_available():
           pipe = pipe.to("cuda")
+          pipe.enable_xformers_memory_efficient_attention()
         last_mode = "txt2img"
 
     prompt = current_model.prefix + prompt  
@@ -175,6 +178,7 @@ def img_to_img(model_path, prompt, n_images, neg_prompt, img, strength, guidance
         
         if torch.cuda.is_available():
           pipe = pipe.to("cuda")
+          pipe.enable_xformers_memory_efficient_attention()
         last_mode = "img2img"
 
     prompt = current_model.prefix + prompt
@@ -184,7 +188,7 @@ def img_to_img(model_path, prompt, n_images, neg_prompt, img, strength, guidance
         prompt,
         negative_prompt = neg_prompt,
         num_images_per_prompt=n_images,
-        init_image = img,
+        image = img,
         num_inference_steps = int(steps),
         strength = strength,
         guidance_scale = guidance,
