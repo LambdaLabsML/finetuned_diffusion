@@ -24,6 +24,8 @@ models = [
      Model("Modern Disney", "nitrosocke/mo-di-diffusion", "modern disney style "),
      Model("Classic Disney", "nitrosocke/classic-anim-diffusion", "classic disney style "),
      Model("Loving Vincent (Van Gogh)", "dallinmackay/Van-Gogh-diffusion", "lvngvncnt "),
+     Model("Wavyfusion", "wavymulder/wavyfusion", "wa-vy style "),
+     Model("Analog Diffusion", "wavymulder/Analog-Diffusion", "analog style "),
      Model("Redshift renderer (Cinema4D)", "nitrosocke/redshift-diffusion", "redshift style "),
      Model("Midjourney v4 style", "prompthero/midjourney-v4-diffusion", "mdjrny-v4 style "),
      Model("Waifu", "hakurei/waifu-diffusion"),
