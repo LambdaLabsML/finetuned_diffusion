@@ -126,9 +126,9 @@ def inference(model_name, prompt, guidance, steps, n_images=1, width=512, height
 
   try:
     if img is not None:
-      return img_to_img(model_path, prompt, n_images, neg_prompt, img, strength, guidance, steps, width, height, generator, seed), None
+      return img_to_img(model_path, prompt, n_images, neg_prompt, img, strength, guidance, steps, width, height, generator, seed), f"Done. Seed: {seed}"
     else:
-      return txt_to_img(model_path, prompt, n_images, neg_prompt, guidance, steps, width, height, generator, seed), None
+      return txt_to_img(model_path, prompt, n_images, neg_prompt, guidance, steps, width, height, generator, seed), f"Done. Seed: {seed}"
   except Exception as e:
     return None, error_str(e)
 
@@ -142,7 +142,7 @@ def txt_to_img(model_path, prompt, n_images, neg_prompt, guidance, steps, width,
     if model_path != current_model_path or last_mode != "txt2img":
         current_model_path = model_path
 
-        update_state("Loading text-to-image model...")
+        update_state(f"Loading {current_model.name} text-to-image model...")
 
         if is_colab or current_model == custom_model:
           pipe = StableDiffusionPipeline.from_pretrained(
@@ -177,7 +177,7 @@ def txt_to_img(model_path, prompt, n_images, neg_prompt, guidance, steps, width,
       generator = generator,
       callback=pipe_callback)
 
-    update_state(f"Done. Seed: {seed}")
+    # update_state(f"Done. Seed: {seed}")
     
     return replace_nsfw_images(result)
 
@@ -191,7 +191,7 @@ def img_to_img(model_path, prompt, n_images, neg_prompt, img, strength, guidance
     if model_path != current_model_path or last_mode != "img2img":
         current_model_path = model_path
 
-        update_state("Loading image-to-image model...")
+        update_state(f"Loading {current_model.name} image-to-image model...")
 
         if is_colab or current_model == custom_model:
           pipe = StableDiffusionImg2ImgPipeline.from_pretrained(
@@ -230,7 +230,7 @@ def img_to_img(model_path, prompt, n_images, neg_prompt, img, strength, guidance
         generator = generator,
         callback=pipe_callback)
 
-    update_state(f"Done. Seed: {seed}")
+    # update_state(f"Done. Seed: {seed}")
         
     return replace_nsfw_images(result)
 
