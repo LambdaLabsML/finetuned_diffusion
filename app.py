@@ -6,9 +6,13 @@ import utils
 import datetime
 import time
 import psutil
+import random
+
 
 start_time = time.time()
 is_colab = utils.is_google_colab()
+state = None
+current_steps = 25
 
 class Model:
     def __init__(self, name, path="", prefix=""):
@@ -76,6 +80,14 @@ def error_str(error, title="Error"):
     return f"""#### {title}
             {error}"""  if error else ""
 
+def update_state(new_state):
+  global state
+  state = new_state
+
+def update_state_info(old_state):
+  if state and state != old_state:
+    return gr.update(value=state)
+
 def custom_model_changed(path):
   models[0].path = path
   global current_model
@@ -87,7 +99,16 @@ def on_model_change(model_name):
 
   return gr.update(visible = model_name == models[0].name), gr.update(placeholder=prefix)
 
+def on_steps_change(steps):
+  global current_steps
+  current_steps = steps
+
+def pipe_callback(step: int, timestep: int, latents: torch.FloatTensor):
+    update_state(f"{step}/{current_steps} steps")#\nTime left, sec: {timestep/100:.0f}")
+
 def inference(model_name, prompt, guidance, steps, n_images=1, width=512, height=512, seed=0, img=None, strength=0.5, neg_prompt=""):
+
+  update_state(" ")
 
   print(psutil.virtual_memory()) # print memory usage
 
@@ -97,17 +118,21 @@ def inference(model_name, prompt, guidance, steps, n_images=1, width=512, height
       current_model = model
       model_path = current_model.path
 
-  generator = torch.Generator('cuda').manual_seed(seed) if seed != 0 else None
+  # generator = torch.Generator('cuda').manual_seed(seed) if seed != 0 else None
+  if seed == 0:
+    seed = random.randint(0, 2147483647)
+
+  generator = torch.Generator('cuda').manual_seed(seed)
 
   try:
     if img is not None:
-      return img_to_img(model_path, prompt, n_images, neg_prompt, img, strength, guidance, steps, width, height, generator), None
+      return img_to_img(model_path, prompt, n_images, neg_prompt, img, strength, guidance, steps, width, height, generator, seed), None
     else:
-      return txt_to_img(model_path, prompt, n_images, neg_prompt, guidance, steps, width, height, generator), None
+      return txt_to_img(model_path, prompt, n_images, neg_prompt, guidance, steps, width, height, generator, seed), None
   except Exception as e:
     return None, error_str(e)
 
-def txt_to_img(model_path, prompt, n_images, neg_prompt, guidance, steps, width, height, generator):
+def txt_to_img(model_path, prompt, n_images, neg_prompt, guidance, steps, width, height, generator, seed):
 
     print(f"{datetime.datetime.now()} txt_to_img, model: {current_model.name}")
 
@@ -116,6 +141,8 @@ def txt_to_img(model_path, prompt, n_images, neg_prompt, guidance, steps, width,
     global current_model_path
     if model_path != current_model_path or last_mode != "txt2img":
         current_model_path = model_path
+
+        update_state("Loading text-to-image model...")
 
         if is_colab or current_model == custom_model:
           pipe = StableDiffusionPipeline.from_pretrained(
@@ -147,11 +174,14 @@ def txt_to_img(model_path, prompt, n_images, neg_prompt, guidance, steps, width,
       guidance_scale = guidance,
       width = width,
       height = height,
-      generator = generator)
+      generator = generator,
+      callback=pipe_callback)
+
+    update_state(f"Done. Seed: {seed}")
     
     return replace_nsfw_images(result)
 
-def img_to_img(model_path, prompt, n_images, neg_prompt, img, strength, guidance, steps, width, height, generator):
+def img_to_img(model_path, prompt, n_images, neg_prompt, img, strength, guidance, steps, width, height, generator, seed):
 
     print(f"{datetime.datetime.now()} img_to_img, model: {model_path}")
 
@@ -160,6 +190,8 @@ def img_to_img(model_path, prompt, n_images, neg_prompt, img, strength, guidance
     global current_model_path
     if model_path != current_model_path or last_mode != "img2img":
         current_model_path = model_path
+
+        update_state("Loading image-to-image model...")
 
         if is_colab or current_model == custom_model:
           pipe = StableDiffusionImg2ImgPipeline.from_pretrained(
@@ -195,7 +227,10 @@ def img_to_img(model_path, prompt, n_images, neg_prompt, img, strength, guidance
         guidance_scale = guidance,
         # width = width,
         # height = height,
-        generator = generator)
+        generator = generator,
+        callback=pipe_callback)
+
+    update_state(f"Done. Seed: {seed}")
         
     return replace_nsfw_images(result)
 
@@ -246,7 +281,8 @@ with gr.Blocks(css="style.css") as demo:
 
               # image_out = gr.Image(height=512)
               gallery = gr.Gallery(label="Generated images", show_label=False, elem_id="gallery").style(grid=[2], height="auto")
-
+          
+          state_info = gr.Textbox(label="State", show_label=False, max_lines=2).style(container=False)
           error_output = gr.Markdown()
 
         with gr.Column(scale=45):
@@ -258,7 +294,7 @@ with gr.Blocks(css="style.css") as demo:
 
               with gr.Row():
                 guidance = gr.Slider(label="Guidance scale", value=7.5, maximum=15)
-                steps = gr.Slider(label="Steps", value=25, minimum=2, maximum=75, step=1)
+                steps = gr.Slider(label="Steps", value=current_steps, minimum=2, maximum=75, step=1)
 
               with gr.Row():
                 width = gr.Slider(label="Width", value=512, minimum=64, maximum=1024, step=8)
@@ -272,9 +308,10 @@ with gr.Blocks(css="style.css") as demo:
                 strength = gr.Slider(label="Transformation strength", minimum=0, maximum=1, step=0.01, value=0.5)
 
     if is_colab:
-      model_name.change(on_model_change, inputs=model_name, outputs=[custom_model_group, prompt], queue=False)
-      custom_model_path.change(custom_model_changed, inputs=custom_model_path, outputs=None)
+        model_name.change(on_model_change, inputs=model_name, outputs=[custom_model_group, prompt], queue=False)
+        custom_model_path.change(custom_model_changed, inputs=custom_model_path, outputs=None)
     # n_images.change(lambda n: gr.Gallery().style(grid=[2 if n > 1 else 1], height="auto"), inputs=n_images, outputs=gallery)
+    steps.change(on_steps_change, inputs=[steps], outputs=[], queue=False)
 
     inputs = [model_name, prompt, guidance, steps, n_images, width, height, seed, image, strength, neg_prompt]
     outputs = [gallery, error_output]
@@ -302,8 +339,10 @@ with gr.Blocks(css="style.css") as demo:
     </div>
     """)
 
+    demo.load(update_state_info, inputs=state_info, outputs=state_info, every=0.5, show_progress=False)
+
 print(f"Space built in {time.time() - start_time:.2f} seconds")
 
-if not is_colab:
-  demo.queue(concurrency_count=1)
+# if not is_colab:
+demo.queue(concurrency_count=1)
 demo.launch(debug=is_colab, share=is_colab)
