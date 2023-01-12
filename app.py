@@ -44,6 +44,7 @@ models = [
      Model("Pokémon", "lambdalabs/sd-pokemon-diffusers"),
      Model("Pony Diffusion", "AstraliteHeart/pony-diffusion"),
      Model("Robo Diffusion", "nousr/robo-diffusion"),
+     Model("Epic Diffusion", "johnslegers/epic-diffusion")
   ]
 
 custom_model = None
